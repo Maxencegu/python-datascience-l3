@@ -87,7 +87,6 @@ target/
 assignments/examen_final/
 
 # TD — masqués jusqu'à publication en séance (retirer la ligne le jour J)
-assignments/td01_introduction_a_git/
 assignments/td02_introduction_aux_concepts_de_github/
 assignments/td03_bases_de_python/
 assignments/td04_fonctions_et_numpy/
