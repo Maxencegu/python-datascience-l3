@@ -146,7 +146,7 @@ Tout exercice suit ce schéma fixe :
 
 **Cellule 1 — Setup** (`# @title ⚙️ Préparation de l'exercice (exécuter d'abord)`) : crée l'environnement (dossiers, fichiers, état initial Git). Toujours commencer par `os.chdir("/content")`. Supprimer les variables de l'exercice précédent avec `try: del var / except NameError: pass`.
 
-**Cellule 2 — Exercice** (`# @title 🔧 Exercice — Titre`) : instructions en commentaires avec le format ci-dessous, placeholders `___` à remplacer par l'étudiant.
+**Cellule 2 — Exercice** (`# @title 🔧 Exercice — Titre`) : instructions en commentaires avec le format ci-dessous, placeholders `____` (4 underscores) à remplacer par l'étudiant. Ne jamais utiliser `___` (3 underscores) : dans IPython/Colab c'est une variable d'historique (vaut `''`), un trou non rempli ne lèverait pas de `NameError`.
 
 **Cellule 3 — Validation** (`# @title ✅ Vérification`) : vérifie l'état du système et affiche un retour avec ✅ / ❌. Ne jamais afficher `💡 Indice` quand tout est ✅.
 
@@ -162,12 +162,12 @@ Format des commentaires dans la cellule exercice :
 # ----------------------------------------------------------------
 # Étape 1/N — Consigne
 # ----------------------------------------------------------------
-variable = ___
+variable = ____
 
 # ----------------------------------------------------------------
 # Étape 2/N — Consigne
 # ----------------------------------------------------------------
-___
+____
 ```
 
 **Règles critiques pour les exercices shell :**
@@ -212,7 +212,7 @@ Exercice :
 # ----------------------------------------------------------------
 # Entrez le numéro de la bonne réponse (1, 2, 3 ou 4)
 # ----------------------------------------------------------------
-reponse = ___
+reponse = ____
 ```
 
 Validation :
@@ -229,6 +229,8 @@ EXPLICATIONS = {
 
 try:
     r = int(reponse)
+    if isinstance(reponse, bool) or r != float(reponse):
+        raise ValueError  # refuse True/False et les nombres non entiers (3.7)
     if r == 3:
         print(f"  ✅ Bonne réponse ({r}) : {EXPLICATIONS[r]}")
     elif r in EXPLICATIONS:
@@ -321,14 +323,15 @@ templates/dashboard_etudiants.py  ← script enseignant : tableau de bord des re
 - Les tests vérifient les **outputs des cellules** (pas les variables) → pas de collision entre cellules
 - Le fichier `tdXX_expected.json` mappe `"index_cellule" → "output_attendu"` (string stripé)
 - Le runner est téléchargé depuis le dépôt du cours au runtime → valeurs cachées des étudiants
-- Le workflow se déclenche sur tout push vers une branche `dev_td*` et sur toute PR vers `main`
-- Le nom du TD est déduit automatiquement du nom de branche : `dev_td03` → `td03`
+- Le workflow se déclenche sur tout push vers une branche `dev_*` (aussi `Dev_*`, `DEV_*`) et sur toute PR vers `main`
+- Le nom du TD est déduit automatiquement du nom de branche : `dev_td03` → `td03` (insensible à la casse ; une branche `dev_*` mal nommée, ex. `dev_td3`, fait échouer le job)
+- Tests ignorés (job vert) : branche qui ne commence pas par `dev_` (ex. PR `examen_final`), TD sans `tdXX_expected.json` (TD01, TD02, TD non publié), ou push sans aucun notebook du TD, à quelque profondeur que ce soit (branche tout juste créée). Un notebook du TD mal nommé ou mal placé (`Copie de td03_enonce.ipynb`, `TD3.ipynb`, `TD03/td03_enonce.ipynb`) fait échouer le job avec le nom attendu, sur push comme sur PR
 
 ### Workflow côté enseignant (par TD)
 
 1. Finaliser et exécuter le notebook de correction (`tdXX_correction.ipynb`)
-2. Générer le JSON : `python templates/tests/generate_expected.py tdXX_correction.ipynb tdXX_expected.json`
-3. Relire le JSON : supprimer les cellules de configuration, HTML, images
+2. Générer le JSON : `python templates/tests/generate_expected.py tdXX_correction.ipynb tdXX_expected.json tdXX_enonce.ipynb` (le 3e argument vérifie que chaque index désigne la même cellule de code dans l'énoncé — un décalage ferait échouer tous les étudiants)
+3. Relire le JSON : supprimer les cellules de préparation et les réponses libres (texte saisi par l'étudiant, ex. `"OUI"`) ; les affichages HTML/image sont déjà filtrés
 4. Déposer `tdXX_expected.json` dans `templates/tests/` du dépôt du cours
 5. Pusher → les tests s'activent automatiquement pour tous les étudiants déjà configurés
 

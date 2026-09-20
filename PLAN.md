@@ -413,16 +413,18 @@ Crée l'environnement nécessaire à l'exercice (dossiers, fichiers, état initi
 L'étudiant doit l'exécuter en premier.
 
 Cellule 2 — Exercice
-Contient les instructions en commentaires et des placeholders ___ à remplacer.
-___ est le marqueur standard : l'étudiant remplace chaque ___ par son code.
+Contient les instructions en commentaires et des placeholders ____ à remplacer.
+____ (4 underscores) est le marqueur standard : l'étudiant remplace chaque ____ par son code.
 
 Cellule 3 — Validation (@title ✅)
 Vérifie automatiquement les résultats et affiche un retour par étape.
 
-Placeholder ___
+Placeholder ____
 
-___ est utilisé pour tout type d'exercice (shell, Git, Python).
-En Python, ___ lève un NameError si l'étudiant oublie de le remplacer.
+____ (4 underscores) est utilisé pour tout type d'exercice (shell, Git, Python).
+En Python, ____ lève un NameError si l'étudiant oublie de le remplacer.
+Ne jamais utiliser ___ (3 underscores) : dans IPython/Colab, ___ est une variable d'historique
+(l'avant-avant-dernière sortie, '' au départ). Un trou oublié ne lèverait pas d'erreur claire.
 Évitez les placeholders sur les lignes de commandes magiques IPython (voir ci-dessous).
 
 Exercices shell — règles spécifiques
@@ -467,8 +469,8 @@ print(version_git[0])
 La validation vérifie que la variable existe et contient la sortie attendue :
 
 try:
-    ok = isinstance(version_git, list) and version_git[0].startswith("git version")
-    print(f"  ✅ {version_git[0]}" if ok else "  ❌ Commande incorrecte")
+    sortie = version_git[0] if isinstance(version_git, list) and version_git else ""
+    print(f"  ✅ {sortie}" if sortie.startswith("git version") else "  ❌ Commande incorrecte")
 except NameError:
     print("  ❌ version_git n'est pas défini")
 
@@ -483,8 +485,8 @@ open("mh_survey/funding.doc", "w").write("Budget")
 open("mh_survey/data/survey_results.csv", "w").write("id,score\n1,7\n2,4\n")
 %cd /content/mh_survey
 
-# Exercice : l'étudiant complète ___
-!___
+# Exercice : l'étudiant complète ____
+!____
 
 # Validation
 import os

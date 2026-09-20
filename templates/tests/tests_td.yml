@@ -2,7 +2,7 @@ name: Tests TD
 
 on:
   push:
-    branches: ['dev_td*']
+    branches: ['dev_*', 'Dev_*', 'DEV_*']
   pull_request:
     branches: [main]
 
@@ -20,7 +20,7 @@ jobs:
           python-version: '3.12'
 
       - name: Installer les dépendances
-        run: pip install nbformat nbconvert ipykernel numpy "pandas>=2.0,<3.0" matplotlib seaborn scipy
+        run: pip install nbformat nbconvert ipykernel "numpy>=2,<3" "pandas>=2.0,<3.0" "matplotlib<4" seaborn scipy
 
       - name: Détecter le TD depuis le nom de la branche
         run: |
@@ -29,16 +29,38 @@ jobs:
           else
             BRANCH=${GITHUB_REF#refs/heads/}
           fi
-          echo "TD=${BRANCH#dev_}" >> $GITHUB_ENV
+          BRANCH_LOWER=$(echo "$BRANCH" | tr '[:upper:]' '[:lower:]')
+          case "$BRANCH_LOWER" in
+            dev_*) ;;
+            *)
+              echo "ℹ️ Branche « $BRANCH » : pas une branche de TD — tests ignorés"
+              echo "SKIP=1" >> $GITHUB_ENV
+              exit 0
+              ;;
+          esac
+          TD=${BRANCH_LOWER#dev_}
+          if ! echo "$TD" | grep -Eq '^td[0-9]{2}$'; then
+            echo "❌ Branche « $BRANCH » : nom attendu dev_tdXX (ex. : dev_td03)"
+            exit 1
+          fi
+          echo "TD=$TD" >> $GITHUB_ENV
 
       - name: Télécharger les fichiers de test
+        if: env.SKIP != '1'
         run: |
           BASE="https://raw.githubusercontent.com/Maxencegu/python-datascience-l3/main/templates/tests"
           curl -f -o run_tests.py "$BASE/run_tests.py"
           if ! curl -f -o expected.json "$BASE/${TD}_expected.json"; then
             echo "⚠️ Aucun fichier de test trouvé pour ${TD} — tests ignorés"
-            exit 0
+            echo "SKIP=1" >> $GITHUB_ENV
+          elif [ "$GITHUB_EVENT_NAME" = "push" ] && ! git ls-files '*.ipynb' | grep -Eqi "td[ _-]?0?$((10#${TD#td}))([^0-9]|$)"; then
+            # Branche tout juste créée : aucun notebook de ce TD déposé (à aucune profondeur).
+            # Un notebook mal nommé ou mal placé (« Copie de td03_enonce.ipynb », « TD3.ipynb »,
+            # « TD03/td03_enonce.ipynb ») n'est pas ignoré : run_tests.py échoue et indique le nom attendu.
+            echo "⚠️ Aucun notebook ${TD} déposé sur la branche — tests ignorés pour ce push"
+            echo "SKIP=1" >> $GITHUB_ENV
           fi
 
       - name: Lancer les tests
+        if: env.SKIP != '1'
         run: python run_tests.py "${TD}_enonce.ipynb" expected.json

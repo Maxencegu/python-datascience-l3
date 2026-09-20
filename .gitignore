@@ -100,12 +100,11 @@ assignments/td01_introduction_a_git/td01_correction.ipynb
 assignments/td02_introduction_aux_concepts_de_github/td02_correction.ipynb
 assignments/td03_bases_de_python/td03_correction.ipynb
 assignments/td04_fonctions_et_numpy/td04_correction.ipynb
-assignments/td05_matplotlib_et_pandas/td05_correction.ipynb
-assignments/td06_logique_et_boucles/td06_correction.ipynb
-assignments/td07_agregation/td07_correction.ipynb
-assignments/td08_filtrage/td08_correction.ipynb
-assignments/td09_fusion/td09_correction.ipynb
-assignments/td10_series_temporelles/td10_correction.ipynb
+assignments/td05_matplotlib_dictionnaires_et_pandas/td05_correction.ipynb
+assignments/td06_Logique_flux_de_controle_filtrage_et_boucles/td06_correction.ipynb
+assignments/td07_mp1_etude_de_cas_et_mini_projet/td07_correction.ipynb
+assignments/td08_pandas_agregation_et_transformation/td08_correction.ipynb
+assignments/examen_final/examen_final_correction.ipynb
 
 
 # IPython
@@ -246,3 +245,6 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Données nominatives (feuilles de présence, réponses aux formulaires) — ne jamais publier
+réponses/

@@ -2,13 +2,10 @@
   "14": "2100\n10.85\n<Figure size 640x480 with 1 Axes>",
   "17": "469.70929810000007\n43.487\n<Figure size 640x480 with 1 Axes>",
   "19": "<Figure size 640x480 with 1 Axes>",
-  "22": "<Figure size 640x480 with 1 Axes>NON",
   "26": "<Figure size 640x480 with 1 Axes>",
-  "28": "<Figure size 640x480 with 1 Axes>La classe qui contient le plus grand nombre de pays : 5\n--------------------------------------------------------\n<Figure size 640x480 with 1 Axes>Avec 20 classes, est ce plus lisible: OUI",
-  "31": "<Figure size 640x480 with 1 Axes>-----------------------------------------------------------------------\n<Figure size 640x480 with 1 Axes>La différence est-elle importante : OUI\n<Figure size 640x480 with 0 Axes>",
-  "33": "Environnement pret",
+  "33": "✅ Environnement prêt",
   "35": "Résultats :\n\n  ✅ Bonne réponse (3) : Correct ! L'histogramme est l'outil idéal pour visualiser la distribution d'une variable numérique et voir si elle suit une forme particulière (cloche, asymétrie, etc.).",
-  "37": "Environnement pret",
+  "37": "✅ Environnement prêt",
   "39": "Résultats :\n\n  ✅ Bonne réponse (2) : Correct ! Le nuage de points est l'outil idéal pour évaluer visuellement la corrélation entre deux variables numériques — ici la longueur des réponses et les notes.",
   "43": "<Figure size 640x480 with 1 Axes>",
   "45": "<Figure size 640x480 with 1 Axes>",
@@ -28,5 +25,6 @@
   "87": "cars_per_cap        country  drives_right\nUS            809  United States          True\nAUS           731      Australia         False\nJPN           588          Japan         False\n     cars_per_cap  country  drives_right\nIN             18    India         False\nRU            200   Russia          True\nMOR            70  Morocco          True",
   "89": "cars_per_cap      588\ncountry         Japan\ndrives_right    False\nName: JPN, dtype: object\n     cars_per_cap    country  drives_right\nAUS           731  Australia         False\nEG             45      Egypt          True",
   "91": "True\n     country  drives_right\nRU    Russia          True\nMOR  Morocco          True",
-  "93": "US      True\nAUS    False\nJPN    False\nIN     False\nRU      True\nMOR     True\nEG      True\nName: drives_right, dtype: bool\n     drives_right\nUS           True\nAUS         False\nJPN         False\nIN          False\nRU           True\nMOR          True\nEG           True\n     cars_per_cap  drives_right\nUS            809          True\nAUS           731         False\nJPN           588         False\nIN             18         False\nRU            200          True\nMOR            70          True\nEG             45          True"
+  "93": "US      True\nAUS    False\nJPN    False\nIN     False\nRU      True\nMOR     True\nEG      True\nName: drives_right, dtype: bool\n     drives_right\nUS           True\nAUS         False\nJPN         False\nIN          False\nRU           True\nMOR          True\nEG           True\n     cars_per_cap  drives_right\nUS            809          True\nAUS           731         False\nJPN           588         False\nIN             18         False\nRU            200          True\nMOR            70          True\nEG             45          True",
+  "70": "paris\n{'spain': {'capital': 'madrid', 'population': 46.77}, 'france': {'capital': 'paris', 'population': 66.03}, 'germany': {'capital': 'berlin', 'population': 80.62}, 'norway': {'capital': 'oslo', 'population': 5.084}, 'italy': {'capital': 'rome', 'population': 59.83}}"
 }

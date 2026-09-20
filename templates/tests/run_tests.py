@@ -3,6 +3,7 @@ Runner universel de tests pour les notebooks étudiants.
 Téléchargé automatiquement par le workflow GitHub Actions au moment de l'exécution.
 Usage : python run_tests.py <tdXX_enonce.ipynb> <tdXX_expected.json>
 """
+import os
 import sys
 import json
 import nbformat
@@ -13,6 +14,19 @@ if len(sys.argv) != 3:
     sys.exit(1)
 
 nb_path, expected_path = sys.argv[1], sys.argv[2]
+
+if not os.path.exists(nb_path):
+    notebooks = sorted(
+        os.path.relpath(os.path.join(racine, f))
+        for racine, dossiers, fichiers in os.walk(".")
+        if ".git" not in racine.split(os.sep)
+        for f in fichiers if f.endswith(".ipynb")
+    )
+    print(f"❌ Notebook {nb_path} introuvable à la racine du dépôt.")
+    if notebooks:
+        print(f"   Notebooks présents : {', '.join(notebooks)}")
+        print(f"   Déposez votre notebook à la racine du dépôt, sous le nom exact {nb_path}")
+    sys.exit(1)
 
 print(f"📓 Exécution de {nb_path}...")
 
@@ -34,13 +48,24 @@ with open(expected_path, encoding="utf-8") as f:
 
 errors = []
 for cell_idx, exp in expected.items():
-    cell = nb.cells[int(cell_idx)]
+    idx = int(cell_idx)
+    if idx >= len(nb.cells) or nb.cells[idx].cell_type != "code":
+        errors.append(
+            f"  Cellule {cell_idx}\n"
+            f"    la cellule n'existe pas ou n'est pas une cellule de code — "
+            f"avez-vous ajouté ou supprimé des cellules dans le notebook ?"
+        )
+        continue
+    cell = nb.cells[idx]
     parts = []
     for out in cell.outputs:
         if out.output_type == "stream":
             parts.append(out.get("text", ""))
         elif out.output_type in ("execute_result", "display_data"):
-            parts.append(out.get("data", {}).get("text/plain", ""))
+            texte = out.get("data", {}).get("text/plain", "")
+            # Même filtre que generate_expected.py : affichages HTML/image ignorés
+            if not texte.startswith(("<IPython.core.display.", "<IPython.lib.display.")):
+                parts.append(texte)
     actual = "".join(parts).strip()
     if actual != exp.strip():
         errors.append(
