@@ -86,14 +86,6 @@ target/
 # Examen final (retirer le jour de l'examen)
 assignments/examen_final/
 
-# TD — masqués jusqu'à publication en séance (retirer la ligne le jour J)
-assignments/td02_introduction_aux_concepts_de_github/
-assignments/td03_bases_de_python/
-assignments/td04_fonctions_et_numpy/
-assignments/td05_matplotlib_dictionnaires_et_pandas/
-assignments/td06_Logique_flux_de_controle_filtrage_et_boucles/
-assignments/td07_mp1_etude_de_cas_et_mini_projet/
-assignments/td08_pandas_agregation_et_transformation/
 
 # Corrigés (retirer la ligne correspondante le jour de la publication)
 assignments/td01_introduction_a_git/td01_correction.ipynb
