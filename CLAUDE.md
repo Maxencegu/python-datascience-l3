@@ -345,15 +345,16 @@ templates/dashboard_etudiants.py  ← script enseignant : tableau de bord des re
 
 **Infographies TD02 — plan complet (toutes générées) :**
 - 01 — Qu'est-ce que GitHub
-- 02 — Créer et explorer un dépôt (`upjv-python-datascience`)
-- 03 — Rédiger son README (syntaxe Markdown + template étudiant)
-- 04 — Déposer le notebook TD01 sur GitHub
-- 05 — Modifier le contenu d'un dépôt (créer / uploader / dossier / modifier / supprimer)
-- 06 — Utilisation des branches (créer, branche par défaut, changer)
-- 07 — Accès au dépôt et collaborateurs (dépôts privés, ajouter un collaborateur)
-- 08 — Token d'accès personnel (PAT)
-- 09 — Cloner et dupliquer un dépôt (clone, fork)
-- 10 — Issues GitHub (créer, assigner, labels, milestone)
-- 11 — Pull Requests (créer, base/compare, reviewer, workflow 6 étapes)
-- 12 — Examiner une Pull Request (Files changed, 3 options, merge, delete branch)
-- 13 — Workflow complet TD03→TD10 (4 phases, 10 étapes, feuille de présence + quiz)
+- 02 — Créer son compte GitHub (inscription, username, plan Free, tour de l'interface)
+- 03 — Créer et explorer un dépôt (`upjv-python-datascience`)
+- 04 — Rédiger son README (syntaxe Markdown + template étudiant)
+- 05 — Déposer le notebook TD01 sur GitHub
+- 06 — Modifier le contenu d'un dépôt (créer / uploader / dossier / modifier / supprimer)
+- 07 — Utilisation des branches (créer, branche par défaut, changer)
+- 08 — Accès au dépôt et collaborateurs (dépôts privés, ajouter un collaborateur)
+- 09 — Token d'accès personnel (PAT)
+- 10 — Cloner et dupliquer un dépôt (clone, fork)
+- 11 — Issues GitHub (créer, assigner, labels, milestone)
+- 12 — Pull Requests (créer, base/compare, reviewer, workflow 6 étapes)
+- 13 — Examiner une Pull Request (Files changed, 3 options, merge, delete branch)
+- 14 — Workflow complet TD03→TD10 (4 phases, 10 étapes, feuille de présence + quiz)
