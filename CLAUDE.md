@@ -315,8 +315,55 @@ templates/tests/
   td06_expected.json    ← outputs attendus TD06 ✅
   td07_expected.json    ← outputs attendus TD07 partie 1 uniquement (MP exclu) ✅
   td08_expected.json    ← outputs attendus TD08 ✅
-templates/dashboard_etudiants.py  ← script enseignant : tableau de bord des repos étudiants
+templates/dashboard_etudiants.py  ← script enseignant : tableau de bord HTML de la promo
 ```
+
+## Tableau de bord enseignant
+
+`templates/dashboard_etudiants.py` agrège tout le suivi de la promo et écrit un
+tableau de bord HTML autonome.
+
+```
+python templates/dashboard_etudiants.py            # tous les TD
+python templates/dashboard_etudiants.py --td td03  # un seul TD
+python templates/dashboard_etudiants.py --refresh  # ignore le cache GitHub (TTL 15 min)
+python templates/dashboard_etudiants.py --offline  # aucune requête réseau
+```
+
+Prérequis : `gh auth login`. `openpyxl` seulement si les exports sont en `.xlsx`.
+
+**Entrées — toutes dans `réponses/` (dossier gitignoré, données nominatives) :**
+
+| Fichier | Rôle |
+|---------|------|
+| `TDxx - Feuille de Présence.csv` (ou `.zip`, `.xlsx`) | export Google Forms, présence |
+| `TDxx - Quiz.csv` (ou `.zip`, `.xlsx`) | export Google Forms, score du quiz + URL du dépôt |
+| `etudiants.csv` | annuaire `email,nom,numero,username`, complété automatiquement depuis l'URL du quiz, éditable à la main |
+
+Le TD est déduit du nom de fichier (`TD03`, `td3`…), les colonnes sont reconnues
+par mots-clés dans l'en-tête — aucun format strict à respecter.
+
+**Ce qui est vérifié pour chaque étudiant et chaque TD :**
+- présence et score du quiz (exports Google Forms)
+- `tdXX_enonce.ipynb` présent sur `main`
+- sorties des cellules comparées à `templates/tests/tdXX_expected.json` ; pour le
+  TD01 et le TD02 (pas de JSON d'attendus), lecture des cellules `✅ Vérification`
+  et détection des `❌` et des placeholders `____` restants
+- cycle Git : branche `dev_tdXX`, Pull Request, approbation **par un tiers**
+  (l'auto-approbation est signalée), merge, suppression de la branche,
+  conclusion des GitHub Actions, dates de création et de merge
+
+**Notes** — barème du README : 10 pts présence + 20 pts notebook + 10 pts quiz
+(TD07 : 10 + 20 + 30 pts de mini-projet, pas de quiz). Les 20 pts du notebook sont
+proportionnels aux cellules correctes.
+
+**Sortie** : `réponses/dashboard.html`, autonome, avec recherche, filtre par TD,
+filtres « problèmes uniquement » et « sans dépôt », tri par colonne et détail
+par TD au clic. **Contient des données nominatives : ne jamais le committer.**
+
+La vérification du cycle Pull Request du TD02 ne peut pas être verte dans le
+notebook déposé (elle s'exécute après l'upload) : elle est exclue de l'audit des
+cellules et contrôlée via l'API GitHub.
 
 ### Principe de test
 
