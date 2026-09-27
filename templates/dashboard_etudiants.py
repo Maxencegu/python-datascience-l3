@@ -76,6 +76,8 @@ BAREME["td07"] = {"presence": 10, "notebook": 20, "quiz": 0, "mp": 30}
 
 # Le cycle Git (branche → PR → review → merge) démarre au TD02.
 PREMIER_TD_GIT = "td02"
+# La review par un tiers est obligatoire à partir du TD03 (TD02 : configuration initiale).
+PREMIER_TD_REVIEW = "td03"
 
 
 # ════════════════════════════════════════════════════════════════════════════
@@ -428,6 +430,7 @@ def cycle_git(gh, depot, proprietaire, td, branches):
         "pr": False, "pr_numero": None, "creee_le": None, "mergee_le": None,
         "approuvee_par": None, "auto_approuvee": False,
         "branche_supprimee": False, "checks": None, "url": None,
+        "review_requise": td >= PREMIER_TD_REVIEW,
     }
     prs = gh.api(f"repos/{depot}/pulls?state=all&base=main&head={proprietaire}:{branche}") or []
     if not prs:
@@ -684,7 +687,7 @@ function problemes(e) {
       if (!d.git.pr) liste.push(`${td} : aucune Pull Request`);
       else {
         if (!d.git.mergee_le) liste.push(`${td} : PR non mergée`);
-        if (!d.git.approuvee_par) liste.push(`${td} : ${d.git.auto_approuvee ? "auto-approuvée" : "sans review"}`);
+        if (d.git.review_requise && !d.git.approuvee_par) liste.push(`${td} : ${d.git.auto_approuvee ? "auto-approuvée" : "sans review"}`);
         if (!d.git.branche_supprimee) liste.push(`${td} : branche non supprimée`);
         if (d.git.checks === "failure") liste.push(`${td} : Actions en échec`);
       }
@@ -697,7 +700,7 @@ function etatGit(g) {
   if (!g) return pastille("neutre", "—");
   if (!g.pr) return pastille("ko", "pas de PR");
   if (!g.mergee_le) return pastille("attente", "PR ouverte");
-  if (!g.approuvee_par) return pastille("attente", g.auto_approuvee ? "auto-approuvée" : "sans review");
+  if (g.review_requise && !g.approuvee_par) return pastille("attente", g.auto_approuvee ? "auto-approuvée" : "sans review");
   if (!g.branche_supprimee) return pastille("attente", "branche restante");
   if (g.checks === "failure") return pastille("ko", "Actions ❌");
   return pastille("ok", "cycle complet");
