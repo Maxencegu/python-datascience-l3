@@ -41,6 +41,8 @@ import subprocess
 import sys
 import time
 import unicodedata
+import urllib.error
+import urllib.request
 import zipfile
 from datetime import datetime, timezone
 
@@ -54,6 +56,19 @@ SORTIE = os.path.join(REPONSES, "dashboard.html")
 
 REPO_NAME = "upjv-python-datascience"
 CACHE_TTL = 15 * 60  # secondes
+
+# ── Google Sheets (feuilles publiques) ──────────────────────────────────────
+# Chaque entrée : nom de fichier dans réponses/ → URL d'export CSV.
+# Le nom de fichier détermine quel TD/type est reconnu par fichiers_exports() :
+#   "TD02 - Quiz (auto).csv"                → quiz TD02
+#   "TD03 - Feuille de Présence (auto).csv" → présence TD03
+GOOGLE_SHEETS = {
+    "TD02 - Quiz (auto).csv": (
+        "https://docs.google.com/spreadsheets/d/"
+        "1xhPMQG_Y0i2Rnkr7ufYW828zr9R_q8-usbLwj4Ghkq0"
+        "/export?format=csv&gid=1187797802"
+    ),
+}
 
 # ── Barème (README.md § Évaluation) ─────────────────────────────────────────
 TDS = ["td01", "td02", "td03", "td04", "td05", "td06", "td07", "td08"]
@@ -846,6 +861,24 @@ def resume_console(donnees):
     print(f"{'─' * largeur}\n")
 
 
+def telecharger_sheets():
+    """Télécharge les Google Sheets de GOOGLE_SHEETS vers réponses/."""
+    os.makedirs(REPONSES, exist_ok=True)
+    for nom_fichier, url in GOOGLE_SHEETS.items():
+        destination = os.path.join(REPONSES, nom_fichier)
+        try:
+            with urllib.request.urlopen(url, timeout=15) as rep:
+                contenu = rep.read()
+            with open(destination, "wb") as f:
+                f.write(contenu)
+            print(f"  ✅ Google Sheets : {nom_fichier}")
+        except urllib.error.HTTPError as e:
+            print(f"  ⚠️  Google Sheets {nom_fichier} : HTTP {e.code} "
+                  f"(feuille privée ? Partager → Toute personne avec le lien → Lecteur)")
+        except Exception as e:
+            print(f"  ⚠️  Google Sheets {nom_fichier} : {e}")
+
+
 def main():
     analyseur = argparse.ArgumentParser(description="Tableau de bord enseignant")
     analyseur.add_argument("td", nargs="?", help="limiter à un TD (ex. : td03)")
@@ -866,6 +899,10 @@ def main():
         print(f"❌ Dossier introuvable : {REPONSES}")
         print("   Déposez-y les exports Google Forms (présence, quiz).")
         sys.exit(1)
+
+    if not arguments.offline and GOOGLE_SHEETS:
+        print("📥 Téléchargement Google Sheets…")
+        telecharger_sheets()
 
     print("📥 Lecture des exports et interrogation de GitHub…")
     donnees = collecter(tds, hors_ligne=arguments.offline, rafraichir=arguments.refresh)
