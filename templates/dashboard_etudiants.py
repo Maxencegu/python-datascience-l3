@@ -87,6 +87,11 @@ GOOGLE_SHEETS = {
         "1i15Avu_gHPq79Ofy-Nl4wrin-VehzdasCDu9LLjQBmw"
         "/export?format=csv&gid=0"
     ),
+    "TD03 - Quiz (auto).csv": (
+        "https://docs.google.com/spreadsheets/d/"
+        "1S0Y1RvufZMAemgTmRn5j6EtvCxlro6bFJ5LNYbhWx1o"
+        "/export?format=csv&gid=0"
+    ),
 }
 
 # ── Barème (README.md § Évaluation) ─────────────────────────────────────────
@@ -524,9 +529,14 @@ def notes_du_td(td, presence, quiz, audit, git):
     if audit["total"]:
         notes["notebook"] = round(bareme["notebook"] * audit["ok"] / audit["total"], 1)
 
-    if bareme["quiz"] and quiz and quiz.get("obtenu") is not None:
-        total = quiz.get("total") or bareme["quiz"]
-        notes["quiz"] = round(bareme["quiz"] * quiz["obtenu"] / total, 1)
+    if bareme["quiz"] and quiz:
+        if td == "td02":
+            # TD02 : 10 pts si l'URL du dépôt est renseignée
+            if quiz.get("url"):
+                notes["quiz"] = float(bareme["quiz"])
+        elif quiz.get("obtenu") is not None:
+            total = quiz.get("total") or bareme["quiz"]
+            notes["quiz"] = round(bareme["quiz"] * quiz["obtenu"] / total, 1)
 
     obtenu = sum(notes.values())
     maximum = sum(bareme.values())
@@ -788,7 +798,7 @@ function problemes(e) {
     else if (d.audit.total && d.audit.ok < d.audit.total)
       liste.push(`${td} : ${d.audit.total - d.audit.ok}/${d.audit.total} cellules incorrectes`);
     if (d.audit.placeholders) liste.push(`${td} : ${d.audit.placeholders} placeholder(s) ____`);
-    if (b.quiz && (!d.quiz || d.quiz.obtenu === null)) liste.push(`${td} : quiz non fait`);
+    if (b.quiz && !d.quiz) liste.push(`${td} : quiz non fait`);
     if (d.git) {
       if (!d.git.pr) liste.push(`${td} : aucune Pull Request`);
       else {
@@ -845,14 +855,16 @@ function detail(e) {
       ${pbs ? `<div class="pb">${pbs}</div>` : ""}
     </div>`;
   }).join("");
-  return `<tr class="detail"><td colspan="7"><div class="grille">${cartes}</div></td></tr>`;
+  return `<tr class="detail"><td colspan="9"><div class="grille">${cartes}</div></td></tr>`;
 }
 
 function rendre() {
   const tds = tdsAffiches();
   const donnees = lignes();
   document.getElementById("entetes").innerHTML = `<tr>
-    <th data-cle="nom">Étudiant</th>
+    <th data-cle="nom">Nom — Prénom</th>
+    <th data-cle="email">Email</th>
+    <th data-cle="numero">N° étudiant</th>
     <th data-cle="username">Username GitHub</th>
     <th>Présence</th>
     <th>Notebooks</th>
@@ -861,7 +873,7 @@ function rendre() {
     <th data-cle="problemes">Points bloquants</th></tr>`;
 
   document.getElementById("corps").innerHTML = donnees.length === 0
-    ? `<tr><td colspan="7" class="vide">Aucun étudiant ne correspond au filtre.</td></tr>`
+    ? `<tr><td colspan="9" class="vide">Aucun étudiant ne correspond au filtre.</td></tr>`
     : donnees.map((e, i) => {
       const s = scoreEtudiant(e), pbs = problemes(e);
       const presents = tds.filter(td => e.tds[td].presence).length;
@@ -869,14 +881,16 @@ function rendre() {
       const cellulesTot = tds.reduce((a, td) => a + e.tds[td].audit.total, 0);
       const gits = tds.filter(td => e.tds[td].git).map(td => etatGit(e.tds[td].git)).join(" ");
       return `<tr class="ligne" onclick="basculer(${i})">
-        <td><div class="nom">${e.nom}</div><div class="meta">${e.email}${e.numero ? " · " + e.numero : ""}</div></td>
+        <td class="nom">${e.nom}</td>
+        <td><div class="meta">${e.email}</div></td>
+        <td>${e.numero || "—"}</td>
         <td>${e.username ? `<a href="${e.depot}" target="_blank">${e.username}</a>` : pastille("ko", "inconnu")}</td>
         <td>${presents}/${tds.length}</td>
         <td>${cellulesOk}/${cellulesTot}<div class="barre"><span style="width:${cellulesTot ? 100 * cellulesOk / cellulesTot : 0}%"></span></div></td>
         <td>${gits || pastille("neutre", "—")}</td>
         <td><b>${s.obtenu}</b>/${s.max}<div class="meta">${s.pct} %</div></td>
         <td>${pbs.length ? pastille("ko", pbs.length + " à voir") : pastille("ok", "tout est propre")}</td>
-      </tr>` + `<tr class="detail" id="d${i}" style="display:none"><td colspan="7"></td></tr>`;
+      </tr>` + `<tr class="detail" id="d${i}" style="display:none"><td colspan="9"></td></tr>`;
     }).join("");
 
   donnees.forEach((e, i) => {
