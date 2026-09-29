@@ -881,10 +881,14 @@ def telecharger_sheets():
 
 def main():
     # Force UTF-8 sur Windows (cp1252 ne supporte pas les emoji).
-    if hasattr(sys.stdout, "reconfigure"):
-        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
-    if hasattr(sys.stderr, "reconfigure"):
-        sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+    if hasattr(sys.stdout, "buffer"):
+        sys.stdout = io.TextIOWrapper(
+            sys.stdout.buffer, encoding="utf-8", errors="replace", line_buffering=True
+        )
+    if hasattr(sys.stderr, "buffer"):
+        sys.stderr = io.TextIOWrapper(
+            sys.stderr.buffer, encoding="utf-8", errors="replace", line_buffering=True
+        )
 
     analyseur = argparse.ArgumentParser(description="Tableau de bord enseignant")
     analyseur.add_argument("td", nargs="?", help="limiter à un TD (ex. : td03)")
