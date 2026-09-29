@@ -57,6 +57,9 @@ SORTIE = os.path.join(REPONSES, "dashboard.html")
 REPO_NAME = "upjv-python-datascience"
 CACHE_TTL = 15 * 60  # secondes
 
+# Filtre sur la colonne "classe" du Google Sheets ("L3", "M1", ou "" pour tout garder).
+CLASSE_FILTRE = "L3"
+
 # ── Google Sheets (feuilles publiques) ──────────────────────────────────────
 # Chaque entrée : nom de fichier dans réponses/ → URL d'export CSV.
 # Le nom de fichier détermine quel TD/type est reconnu par fichiers_exports() :
@@ -211,9 +214,12 @@ def charger_quiz():
                 obtenu, total = _score_quiz(ligne)
                 url = (colonne(ligne, "url", "depot") or colonne(ligne, "lien", "depot")
                        or colonne(ligne, "url") or colonne(ligne, "github"))
+                classe = (colonne(ligne, "classe") or colonne(ligne, "filiere")
+                          or colonne(ligne, "niveau") or colonne(ligne, "promotion"))
                 quiz[td][email.strip().lower()] = {
                     "obtenu": obtenu, "total": total, "url": url,
                     "horodatage": colonne(ligne, "horodateur"),
+                    "classe": classe,
                 }
     return quiz
 
@@ -221,7 +227,7 @@ def charger_quiz():
 # ════════════════════════════════════════════════════════════════════════════
 #  Annuaire des étudiants
 # ════════════════════════════════════════════════════════════════════════════
-CHAMPS_MAPPING = ["email", "nom", "numero", "username"]
+CHAMPS_MAPPING = ["email", "nom", "numero", "username", "classe"]
 
 
 def username_depuis_url(url):
@@ -271,6 +277,9 @@ def construire_annuaire(presences, quiz):
             username = username_depuis_url(reponse.get("url", ""))
             if username and not fiche.get("username"):
                 fiche["username"] = username
+            classe = reponse.get("classe", "")
+            if classe and not fiche.get("classe"):
+                fiche["classe"] = classe
 
     sauver_mapping(annuaire)
     return annuaire
@@ -510,8 +519,21 @@ def collecter(tds, hors_ligne=False, rafraichir=False):
     annuaire = construire_annuaire(presences, quiz)
     gh = GitHub(hors_ligne=hors_ligne, rafraichir=rafraichir)
 
+    # Filtre par classe si CLASSE_FILTRE est défini.
+    if CLASSE_FILTRE:
+        annuaire = {
+            email: fiche for email, fiche in annuaire.items()
+            if CLASSE_FILTRE.upper() in (fiche.get("classe") or "").upper()
+        }
+
+    emails_tries = sorted(annuaire, key=lambda e: (annuaire[e].get("nom") or e).lower())
+    total_etudiants = len(emails_tries)
     etudiants = []
-    for email in sorted(annuaire, key=lambda e: (annuaire[e].get("nom") or e).lower()):
+    for i, email in enumerate(emails_tries, 1):
+        if total_etudiants:
+            pct = int(100 * i / total_etudiants)
+            bar = "#" * (pct // 5) + "-" * (20 - pct // 5)
+            print(f"\r  [{bar}] {pct:3d}%  {i}/{total_etudiants}", end="", flush=True)
         fiche = annuaire[email]
         username = fiche.get("username", "")
         depot = f"{username}/{REPO_NAME}" if username else None
@@ -551,6 +573,7 @@ def collecter(tds, hors_ligne=False, rafraichir=False):
             "email": email,
             "numero": fiche.get("numero", ""),
             "username": username,
+            "classe": fiche.get("classe", ""),
             "depot": f"https://github.com/{depot}" if depot else "",
             "depot_ok": depot_ok,
             "tds": donnees_tds,
@@ -559,6 +582,8 @@ def collecter(tds, hors_ligne=False, rafraichir=False):
             "pourcentage": round(100 * total / maximum, 1) if maximum else 0,
         })
 
+    if total_etudiants:
+        print()  # fin de la barre de progression
     gh.enregistrer()
     return {
         "genere_le": datetime.now(timezone.utc).astimezone().strftime("%d/%m/%Y %H:%M"),
