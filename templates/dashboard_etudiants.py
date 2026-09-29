@@ -75,22 +75,22 @@ GOOGLE_SHEETS = {
     "TD01 - Feuille de Présence (auto).csv": (
         "https://docs.google.com/spreadsheets/d/"
         "1LuxotNcrkV6ailed-wrcWM1QXZ4iWS6lZ5RzUYil4wk"
-        "/export?format=csv&gid=0"
+        "/export?format=csv&gid=1588650101"
     ),
     "TD02 - Feuille de Présence (auto).csv": (
         "https://docs.google.com/spreadsheets/d/"
         "1SmScpXdePQA2nFOt_M4C2xJ9bqCcfqgbMPOBU50q0UE"
-        "/export?format=csv&gid=0"
+        "/export?format=csv&gid=274178632"
     ),
     "TD03 - Feuille de Présence (auto).csv": (
         "https://docs.google.com/spreadsheets/d/"
         "1i15Avu_gHPq79Ofy-Nl4wrin-VehzdasCDu9LLjQBmw"
-        "/export?format=csv&gid=0"
+        "/export?format=csv&gid=1168937225"
     ),
     "TD03 - Quiz (auto).csv": (
         "https://docs.google.com/spreadsheets/d/"
         "1S0Y1RvufZMAemgTmRn5j6EtvCxlro6bFJ5LNYbhWx1o"
-        "/export?format=csv&gid=0"
+        "/export?format=csv&gid=362872238"
     ),
 }
 
