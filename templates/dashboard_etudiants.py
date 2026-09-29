@@ -72,6 +72,21 @@ GOOGLE_SHEETS = {
         "1xhPMQG_Y0i2Rnkr7ufYW828zr9R_q8-usbLwj4Ghkq0"
         "/export?format=csv&gid=1187797802"
     ),
+    "TD01 - Feuille de Présence (auto).csv": (
+        "https://docs.google.com/spreadsheets/d/"
+        "1LuxotNcrkV6ailed-wrcWM1QXZ4iWS6lZ5RzUYil4wk"
+        "/export?format=csv&gid=0"
+    ),
+    "TD02 - Feuille de Présence (auto).csv": (
+        "https://docs.google.com/spreadsheets/d/"
+        "1SmScpXdePQA2nFOt_M4C2xJ9bqCcfqgbMPOBU50q0UE"
+        "/export?format=csv&gid=0"
+    ),
+    "TD03 - Feuille de Présence (auto).csv": (
+        "https://docs.google.com/spreadsheets/d/"
+        "1i15Avu_gHPq79Ofy-Nl4wrin-VehzdasCDu9LLjQBmw"
+        "/export?format=csv&gid=0"
+    ),
 }
 
 # ── Barème (README.md § Évaluation) ─────────────────────────────────────────
@@ -177,15 +192,19 @@ def fichiers_exports(motif):
 
 
 def charger_presences():
-    """{td: {email: horodatage}}"""
+    """{td: {email_ou_numero: horodatage}} — indexé par email ET par numéro étudiant."""
     presences = {}
     for td, chemins in fichiers_exports("presence").items():
         presences[td] = {}
         for chemin in chemins:
             for ligne in lire_tableur(chemin):
+                horodatage = colonne(ligne, "horodateur")
                 email = colonne(ligne, "utilisateur") or colonne(ligne, "adresse", "mail")
+                numero = colonne(ligne, "numero", "etudiant") or colonne(ligne, "numero")
                 if email:
-                    presences[td][email.strip().lower()] = colonne(ligne, "horodateur")
+                    presences[td][email.strip().lower()] = horodatage
+                if numero:
+                    presences[td][numero.strip()] = horodatage
     return presences
 
 
@@ -572,11 +591,15 @@ def _traiter_etudiant(email, fiche, tds, gh, presences, quiz):
             if td >= PREMIER_TD_GIT:
                 git = cycle_git(gh, depot, username, td, branches)
 
-        presence = email in presences.get(td, {})
+        numero = fiche.get("numero", "")
+        td_presences = presences.get(td, {})
+        presence = (email in td_presences
+                    or (numero and numero in td_presences))
+        presence_le = td_presences.get(email) or (td_presences.get(numero) if numero else None)
         note = notes_du_td(td, presence, quiz.get(td, {}).get(email), audit, git)
         donnees_tds[td] = {
             "presence": presence,
-            "presence_le": presences.get(td, {}).get(email),
+            "presence_le": presence_le,
             "quiz": quiz.get(td, {}).get(email),
             "audit": audit,
             "git": git,
