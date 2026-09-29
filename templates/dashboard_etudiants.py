@@ -1084,7 +1084,6 @@ def main():
             sys.exit(1)
         print(f"📂 Données chargées depuis {DONNEES_JSON}")
 
-    resume_console(donnees)
     ecrire_html(donnees, arguments.out)
     print(f"📊 Tableau de bord écrit : {arguments.out}")
     print(f"   Annuaire : {MAPPING}")
