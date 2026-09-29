@@ -830,7 +830,7 @@ function rendre() {
   const donnees = lignes();
   document.getElementById("entetes").innerHTML = `<tr>
     <th data-cle="nom">Étudiant</th>
-    <th data-cle="username">Pseudo GitHub</th>
+    <th data-cle="username">Username GitHub</th>
     <th>Présence</th>
     <th>Notebooks</th>
     <th>Cycle Git</th>
@@ -916,7 +916,7 @@ def resume_console(donnees):
     print(f"  Tableau de bord — {len(donnees['etudiants'])} étudiant(s), "
           f"{len(donnees['tds'])} TD, {donnees['appels_api']} appels API")
     print(f"{'─' * largeur}")
-    print(f"  {'Étudiant':<26}{'Pseudo':<20}{'Cellules':<12}{'Note':<12}{'À voir'}")
+    print(f"  {'Étudiant':<26}{'Username GitHub':<20}{'Cellules':<12}{'Note':<12}{'À voir'}")
     print(f"{'─' * largeur}")
     for etudiant in donnees["etudiants"]:
         ok = sum(t["audit"]["ok"] for t in etudiant["tds"].values())
