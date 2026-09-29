@@ -880,6 +880,12 @@ def telecharger_sheets():
 
 
 def main():
+    # Force UTF-8 sur Windows (cp1252 ne supporte pas les emoji).
+    if hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    if hasattr(sys.stderr, "reconfigure"):
+        sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+
     analyseur = argparse.ArgumentParser(description="Tableau de bord enseignant")
     analyseur.add_argument("td", nargs="?", help="limiter à un TD (ex. : td03)")
     analyseur.add_argument("--td", dest="td_option", help="limiter à un TD")
