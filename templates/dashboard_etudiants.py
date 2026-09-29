@@ -53,6 +53,7 @@ TESTS = os.path.join(RACINE, "templates", "tests")
 CACHE = os.path.join(REPONSES, ".cache_github.json")
 MAPPING = os.path.join(REPONSES, "etudiants.csv")
 SORTIE = os.path.join(REPONSES, "dashboard.html")
+DONNEES_JSON = os.path.join(REPONSES, "donnees.json")
 
 REPO_NAME = "upjv-python-datascience"
 CACHE_TTL = 15 * 60  # secondes
@@ -534,53 +535,7 @@ def collecter(tds, hors_ligne=False, rafraichir=False):
             pct = int(100 * i / total_etudiants)
             bar = "#" * (pct // 5) + "-" * (20 - pct // 5)
             print(f"\r  [{bar}] {pct:3d}%  {i}/{total_etudiants}", end="", flush=True)
-        fiche = annuaire[email]
-        username = fiche.get("username", "")
-        depot = f"{username}/{REPO_NAME}" if username else None
-
-        branches = []
-        depot_ok = False
-        if depot:
-            infos = gh.api(f"repos/{depot}")
-            depot_ok = bool(infos)
-            if depot_ok:
-                branches = [b["name"] for b in (gh.api(f"repos/{depot}/branches?per_page=100") or [])]
-
-        donnees_tds = {}
-        for td in tds:
-            audit = {"present": False, "ok": 0, "total": 0, "details": [], "placeholders": 0}
-            git = None
-            if depot_ok:
-                audit = auditer_notebook(gh.fichier(depot, f"{td}_enonce.ipynb"), td)
-                if td >= PREMIER_TD_GIT:
-                    git = cycle_git(gh, depot, username, td, branches)
-
-            presence = email in presences.get(td, {})
-            note = notes_du_td(td, presence, quiz.get(td, {}).get(email), audit, git)
-            donnees_tds[td] = {
-                "presence": presence,
-                "presence_le": presences.get(td, {}).get(email),
-                "quiz": quiz.get(td, {}).get(email),
-                "audit": audit,
-                "git": git,
-                "note": note,
-            }
-
-        total = round(sum(t["note"]["obtenu"] for t in donnees_tds.values()), 1)
-        maximum = sum(t["note"]["max"] for t in donnees_tds.values())
-        etudiants.append({
-            "nom": fiche.get("nom") or email,
-            "email": email,
-            "numero": fiche.get("numero", ""),
-            "username": username,
-            "classe": fiche.get("classe", ""),
-            "depot": f"https://github.com/{depot}" if depot else "",
-            "depot_ok": depot_ok,
-            "tds": donnees_tds,
-            "total": total,
-            "max": maximum,
-            "pourcentage": round(100 * total / maximum, 1) if maximum else 0,
-        })
+        etudiants.append(_traiter_etudiant(email, annuaire[email], tds, gh, presences, quiz))
 
     if total_etudiants:
         print()  # fin de la barre de progression
@@ -593,6 +548,94 @@ def collecter(tds, hors_ligne=False, rafraichir=False):
         "etudiants": etudiants,
         "appels_api": gh.appels,
     }
+
+
+def _traiter_etudiant(email, fiche, tds, gh, presences, quiz):
+    """Collecte toutes les données GitHub d'un étudiant et retourne son dict."""
+    username = fiche.get("username", "")
+    depot = f"{username}/{REPO_NAME}" if username else None
+
+    branches = []
+    depot_ok = False
+    if depot:
+        infos = gh.api(f"repos/{depot}")
+        depot_ok = bool(infos)
+        if depot_ok:
+            branches = [b["name"] for b in (gh.api(f"repos/{depot}/branches?per_page=100") or [])]
+
+    donnees_tds = {}
+    for td in tds:
+        audit = {"present": False, "ok": 0, "total": 0, "details": [], "placeholders": 0}
+        git = None
+        if depot_ok:
+            audit = auditer_notebook(gh.fichier(depot, f"{td}_enonce.ipynb"), td)
+            if td >= PREMIER_TD_GIT:
+                git = cycle_git(gh, depot, username, td, branches)
+
+        presence = email in presences.get(td, {})
+        note = notes_du_td(td, presence, quiz.get(td, {}).get(email), audit, git)
+        donnees_tds[td] = {
+            "presence": presence,
+            "presence_le": presences.get(td, {}).get(email),
+            "quiz": quiz.get(td, {}).get(email),
+            "audit": audit,
+            "git": git,
+            "note": note,
+        }
+
+    total = round(sum(t["note"]["obtenu"] for t in donnees_tds.values()), 1)
+    maximum = sum(t["note"]["max"] for t in donnees_tds.values())
+    return {
+        "nom": fiche.get("nom") or email,
+        "email": email,
+        "numero": fiche.get("numero", ""),
+        "username": username,
+        "classe": fiche.get("classe", ""),
+        "depot": f"https://github.com/{depot}" if depot else "",
+        "depot_ok": depot_ok,
+        "tds": donnees_tds,
+        "total": total,
+        "max": maximum,
+        "pourcentage": round(100 * total / maximum, 1) if maximum else 0,
+    }
+
+
+def collecter_un(username, tds, hors_ligne=False, rafraichir=False):
+    """Recharge les données GitHub d'un seul étudiant (par username GitHub)."""
+    presences = charger_presences()
+    quiz = charger_quiz()
+    annuaire = construire_annuaire(presences, quiz)
+
+    email = next(
+        (e for e, f in annuaire.items() if f.get("username", "").lower() == username.lower()),
+        None,
+    )
+    if email is None:
+        return None
+
+    gh = GitHub(hors_ligne=hors_ligne, rafraichir=rafraichir)
+    etudiant = _traiter_etudiant(email, annuaire[email], tds, gh, presences, quiz)
+    gh.enregistrer()
+    return etudiant
+
+
+def charger_donnees_json():
+    """Charge le fichier donnees.json ; retourne None si absent ou corrompu."""
+    if not os.path.exists(DONNEES_JSON):
+        return None
+    try:
+        with open(DONNEES_JSON, encoding="utf-8") as f:
+            return json.load(f)
+    except (json.JSONDecodeError, OSError):
+        return None
+
+
+def sauver_donnees_json(donnees):
+    """Sauvegarde le dict donnees dans donnees.json."""
+    os.makedirs(REPONSES, exist_ok=True)
+    with open(DONNEES_JSON, "w", encoding="utf-8") as f:
+        json.dump(donnees, f, ensure_ascii=False, indent=2, default=str)
+    print(f"💾 Sauvegarde JSON : {DONNEES_JSON}")
 
 
 # ════════════════════════════════════════════════════════════════════════════
@@ -915,13 +958,30 @@ def main():
             sys.stderr.buffer, encoding="utf-8", errors="replace", line_buffering=True
         )
 
-    analyseur = argparse.ArgumentParser(description="Tableau de bord enseignant")
+    analyseur = argparse.ArgumentParser(
+        description="Tableau de bord enseignant",
+        formatter_class=argparse.RawTextHelpFormatter,
+    )
     analyseur.add_argument("td", nargs="?", help="limiter à un TD (ex. : td03)")
     analyseur.add_argument("--td", dest="td_option", help="limiter à un TD")
     analyseur.add_argument("--refresh", action="store_true", help="ignorer le cache GitHub")
     analyseur.add_argument("--offline", action="store_true", help="aucune requête réseau")
     analyseur.add_argument("--out", default=SORTIE, help="fichier HTML de sortie")
+    analyseur.add_argument(
+        "--reload", action="store_true",
+        help="recharge depuis GitHub et sauvegarde dans donnees.json\n"
+             "  sans --num_etudiant : recharge complète (supprime l'ancien JSON)\n"
+             "  avec --num_etudiant : recharge uniquement cet étudiant dans le JSON",
+    )
+    analyseur.add_argument(
+        "--num_etudiant", metavar="USERNAME",
+        help="username GitHub de l'étudiant à recharger (avec --reload)",
+    )
     arguments = analyseur.parse_args()
+
+    if arguments.num_etudiant and not arguments.reload:
+        print("❌ --num_etudiant requiert --reload")
+        sys.exit(1)
 
     choix = arguments.td_option or arguments.td
     tds = [choix] if choix else TDS
@@ -935,12 +995,55 @@ def main():
         print("   Déposez-y les exports Google Forms (présence, quiz).")
         sys.exit(1)
 
-    if not arguments.offline and GOOGLE_SHEETS:
-        print("📥 Téléchargement Google Sheets…")
-        telecharger_sheets()
+    # ── Décision : reload / partiel / depuis JSON ────────────────────────────
+    if arguments.reload:
+        if not arguments.offline and GOOGLE_SHEETS:
+            print("📥 Téléchargement Google Sheets…")
+            telecharger_sheets()
 
-    print("📥 Lecture des exports et interrogation de GitHub…")
-    donnees = collecter(tds, hors_ligne=arguments.offline, rafraichir=arguments.refresh)
+        if arguments.num_etudiant:
+            # Rechargement partiel : un seul étudiant
+            donnees = charger_donnees_json()
+            if donnees is None:
+                print(f"❌ Pas de sauvegarde JSON ({DONNEES_JSON}).")
+                print("   Lancez d'abord --reload sans --num_etudiant.")
+                sys.exit(1)
+            print(f"🔄 Rechargement de {arguments.num_etudiant}…")
+            etudiant = collecter_un(
+                arguments.num_etudiant, donnees["tds"],
+                hors_ligne=arguments.offline, rafraichir=arguments.refresh,
+            )
+            if etudiant is None:
+                print(f"❌ Étudiant {arguments.num_etudiant!r} introuvable dans l'annuaire.")
+                sys.exit(1)
+            idx = next(
+                (i for i, e in enumerate(donnees["etudiants"])
+                 if e.get("username", "").lower() == arguments.num_etudiant.lower()),
+                None,
+            )
+            if idx is not None:
+                donnees["etudiants"][idx] = etudiant
+            else:
+                donnees["etudiants"].append(etudiant)
+            donnees["genere_le"] = datetime.now(timezone.utc).astimezone().strftime("%d/%m/%Y %H:%M")
+        else:
+            # Rechargement complet
+            if os.path.exists(DONNEES_JSON):
+                os.remove(DONNEES_JSON)
+                print(f"🗑️  Ancienne sauvegarde supprimée.")
+            print("📥 Lecture des exports et interrogation de GitHub…")
+            donnees = collecter(tds, hors_ligne=arguments.offline, rafraichir=arguments.refresh)
+
+        sauver_donnees_json(donnees)
+    else:
+        # Mode rapide : lecture depuis le JSON (pas d'appel GitHub)
+        donnees = charger_donnees_json()
+        if donnees is None:
+            print(f"❌ Pas de sauvegarde JSON ({DONNEES_JSON}).")
+            print("   Lancez d'abord : python dashboard_etudiants.py --reload")
+            sys.exit(1)
+        print(f"📂 Données chargées depuis {DONNEES_JSON}")
+
     resume_console(donnees)
     ecrire_html(donnees, arguments.out)
     print(f"📊 Tableau de bord écrit : {arguments.out}")
