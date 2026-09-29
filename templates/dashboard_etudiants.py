@@ -911,21 +911,38 @@ def ecrire_html(donnees, chemin):
 
 
 def resume_console(donnees):
-    largeur = 86
+    tds = donnees["tds"]
+    largeur = 88
+    par_ligne = 4  # TD par ligne de détail
+
+    def fmt_note(v):
+        return str(int(v)) if isinstance(v, float) and v == int(v) else str(v)
+
     print(f"\n{'─' * largeur}")
     print(f"  Tableau de bord — {len(donnees['etudiants'])} étudiant(s), "
-          f"{len(donnees['tds'])} TD, {donnees['appels_api']} appels API")
+          f"{len(tds)} TD, {donnees['appels_api']} appels API")
     print(f"{'─' * largeur}")
-    print(f"  {'Étudiant':<26}{'Username GitHub':<20}{'Cellules':<12}{'Note':<12}{'À voir'}")
-    print(f"{'─' * largeur}")
+
     for etudiant in donnees["etudiants"]:
-        ok = sum(t["audit"]["ok"] for t in etudiant["tds"].values())
-        total = sum(t["audit"]["total"] for t in etudiant["tds"].values())
-        cellules = f"{ok}/{total}"
-        note = f"{etudiant['total']}/{etudiant['max']}"
-        statut = "✅" if etudiant["depot_ok"] else "dépôt introuvable"
-        print(f"  {etudiant['nom'][:24]:<26}{(etudiant['username'] or '—')[:18]:<20}"
-              f"{cellules:<12}{note:<12}{statut}")
+        statut = "✅" if etudiant["depot_ok"] else "❌ dépôt introuvable"
+        total_note = f"{fmt_note(etudiant['total'])}/{etudiant['max']}"
+        print(f"  {etudiant['nom'][:28]:<30}{(etudiant['username'] or '—')[:18]:<20}"
+              f"{total_note:<12}{statut}")
+
+        # Détail par TD : 4 par ligne
+        items = []
+        for td in tds:
+            t = etudiant["tds"][td]
+            cel = (f"{t['audit']['ok']}/{t['audit']['total']}"
+                   if t["audit"]["total"] else "—")
+            note = f"{fmt_note(t['note']['obtenu'])}/{t['note']['max']}"
+            items.append(f"{td.upper()}  cel:{cel}  note:{note}")
+
+        for debut in range(0, len(items), par_ligne):
+            chunk = items[debut:debut + par_ligne]
+            print("    " + "   ".join(f"{s:<22}" for s in chunk))
+        print()
+
     print(f"{'─' * largeur}\n")
 
 
