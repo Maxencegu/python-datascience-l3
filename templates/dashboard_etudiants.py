@@ -551,7 +551,7 @@ def cycle_git(gh, depot, proprietaire, td, branches):
     etat = {
         "branche_existe": branche in branches,
         "pr": False, "pr_numero": None, "creee_le": None, "mergee_le": None,
-        "approuvee_par": None, "auto_approuvee": False,
+        "approuvee_par": None, "auto_approuvee": False, "bypass": False,
         "branche_supprimee": False, "checks": None, "url": None,
         "review_requise": td >= PREMIER_TD_REVIEW,
     }
@@ -560,7 +560,12 @@ def cycle_git(gh, depot, proprietaire, td, branches):
         etat["branche_supprimee"] = not etat["branche_existe"] and False
         return etat
 
-    pr = next((p for p in prs if p.get("merged_at")), prs[0])
+    # Dernière PR mergée (tri explicite par merged_at desc) ; sinon la plus récente ouverte.
+    prs_mergees = sorted(
+        [p for p in prs if p.get("merged_at")],
+        key=lambda p: p["merged_at"], reverse=True,
+    )
+    pr = prs_mergees[0] if prs_mergees else prs[0]
     etat.update({
         "pr": True,
         "pr_numero": pr.get("number"),
@@ -580,6 +585,10 @@ def cycle_git(gh, depot, proprietaire, td, branches):
     else:
         if approbations:
             etat["auto_approuvee"] = True
+
+    # bypass : mergée sans approbation tiers (applicable TD03+)
+    if pr.get("merged_at") and etat["review_requise"] and not etat["approuvee_par"]:
+        etat["bypass"] = True
 
     sha = (pr.get("head") or {}).get("sha")
     if sha:
@@ -614,6 +623,8 @@ def notes_du_td(td, presence, quiz, audit, git, proprete=None):
 
     obtenu = sum(notes.values())
     penalite = (proprete or {}).get("penalite", 0)
+    if git and git.get("bypass"):
+        penalite += 5
     obtenu = max(0.0, obtenu - penalite)
     maximum = sum(bareme.values())
     return {"detail": notes, "obtenu": round(obtenu, 1), "max": maximum, "penalite": penalite}
@@ -845,6 +856,7 @@ GABARIT = """<!DOCTYPE html>
     <select id="selectTd"></select>
     <button id="btnProblemes">Problèmes uniquement</button>
     <button id="btnSansDepot">Sans dépôt</button>
+    <button id="btnIssues" style="margin-left:auto;background:#1f6feb;border-color:#388bfd;color:#e6edf3">📋 Générer le script d'issues</button>
     <span class="meta" id="compteur"></span>
   </div>
 
@@ -888,7 +900,8 @@ function problemes(e) {
       if (!d.git.pr) liste.push(`${td} : aucune Pull Request`);
       else {
         if (!d.git.mergee_le) liste.push(`${td} : PR non mergée`);
-        if (d.git.review_requise && !d.git.approuvee_par) liste.push(`${td} : ${d.git.auto_approuvee ? "auto-approuvée" : "sans review"}`);
+        if (d.git.bypass) liste.push(`${td} : bypass (merge sans review tiers)`);
+        else if (d.git.review_requise && !d.git.approuvee_par) liste.push(`${td} : ${d.git.auto_approuvee ? "auto-approuvée" : "sans review"}`);
         if (!d.git.branche_supprimee) liste.push(`${td} : branche non supprimée`);
         if (d.git.checks === "failure") liste.push(`${td} : Actions en échec`);
       }
@@ -903,6 +916,7 @@ function etatGit(g) {
   if (!g) return pastille("neutre", "—");
   if (!g.pr) return pastille("ko", "pas de PR");
   if (!g.mergee_le) return pastille("attente", "PR ouverte");
+  if (g.bypass) return pastille("ko", g.auto_approuvee ? "bypass (auto-approuvée)" : "bypass (sans review)");
   if (g.review_requise && !g.approuvee_par) return pastille("attente", g.auto_approuvee ? "auto-approuvée" : "sans review");
   if (!g.branche_supprimee) return pastille("attente", "branche restante");
   if (g.checks === "failure") return pastille("ko", "Actions ❌");
@@ -947,6 +961,7 @@ function detail(e) {
       ${d.git ? `<div class="l"><span>Cycle Git</span><span>${etatGit(d.git)}</span></div>
       <div class="l"><span>PR créée / mergée</span><span>${jour(d.git.creee_le)} → ${jour(d.git.mergee_le)}</span></div>
       ${d.git.approuvee_par ? `<div class="l"><span>Approuvée par</span><span>${d.git.approuvee_par}</span></div>` : ""}
+      ${d.git.bypass ? `<div class="l"><span>Pénalité bypass</span><span style="color:#ff7b72">-5 pts (merge sans review tiers)</span></div>` : ""}
       ${d.git.url ? `<div class="l"><span>Lien</span><a href="${d.git.url}" target="_blank">PR #${d.git.pr_numero}</a></div>` : ""}` : ""}
       ${pbs ? `<div class="pb">${pbs}</div>` : ""}
     </div>`;
@@ -1020,6 +1035,76 @@ document.getElementById("btnProblemes").addEventListener("click", (ev) => {
 });
 document.getElementById("btnSansDepot").addEventListener("click", (ev) => {
   filtreSansDepot = !filtreSansDepot; ev.target.classList.toggle("actif", filtreSansDepot); rendre();
+});
+
+document.getElementById("btnIssues").addEventListener("click", () => {
+  const avecPbs = DONNEES.etudiants.filter(e => e.username && e.depot_ok && problemes(e).length > 0);
+  if (avecPbs.length === 0) { alert("Aucun étudiant avec des points bloquants."); return; }
+
+  function corpsIssue(e) {
+    const pbs = problemes(e);
+    // Regrouper par TD
+    const parTd = {};
+    const generaux = [];
+    for (const p of pbs) {
+      const m = p.match(/^(td[0-9]+)[\\s]*:[\\s]*(.+)$/i);
+      if (m) { (parTd[m[1].toLowerCase()] = parTd[m[1].toLowerCase()] || []).push(m[2]); }
+      else { generaux.push(p); }
+    }
+    // Ne garder que les TDs où l'étudiant était présent
+    const tdsPresents = Object.keys(parTd).filter(td => e.tds[td] && e.tds[td].presence);
+    if (tdsPresents.length === 0 && generaux.length === 0) return null;
+    let corps = "Bonjour,\\n\\nVoici les points à corriger pour maximiser votre note en Python & Data Science.\\n\\n";
+    for (const td of tdsPresents) {
+      corps += `**${td.toUpperCase()} :**\\n` + parTd[td].map(x => `- ${x}`).join("\\n") + "\\n\\n";
+    }
+    if (generaux.length) {
+      corps += "**Général :**\\n" + generaux.map(x => `- ${x}`).join("\\n") + "\\n\\n";
+    }
+    corps += "Ces points peuvent être corrigés à tout moment. La note sera recalculée lors de la prochaine vérification.\\n\\n";
+    corps += "_Message envoyé automatiquement depuis le tableau de bord enseignant._";
+    return corps;
+  }
+
+  const issues = avecPbs.flatMap(e => {
+    const corps = corpsIssue(e);
+    if (!corps) return [];
+    return [{ repo: `${e.username}/upjv-python-datascience`, nom: e.nom,
+               titre: "Points à corriger — Python & Data Science", corps }];
+  });
+
+  const scriptPy = `#!/usr/bin/env python3
+# Script généré le ${new Date().toLocaleDateString("fr-FR")} depuis le tableau de bord.
+# Crée une issue GitHub pour chaque étudiant ayant des points bloquants.
+# Prérequis : gh auth login
+# Usage : python envoyer_issues.py
+import subprocess, json, sys
+
+ISSUES = ${JSON.stringify(issues, null, 2).replace(/\\\\n/g, "\\\\n")}
+
+for iss in ISSUES:
+    cmd = [
+        "gh", "api", f"repos/{iss['repo']}/issues",
+        "-f", f"title={iss['titre']}",
+        "-f", f"body={iss['corps']}",
+        "-f", "labels=feedback",
+    ]
+    result = subprocess.run(cmd, capture_output=True, text=True)
+    if result.returncode == 0:
+        data = json.loads(result.stdout)
+        print(f"  ✅ {iss['nom']} → {data.get('html_url', '?')}")
+    else:
+        print(f"  ❌ {iss['nom']} ({iss['repo']}) : {result.stderr.strip()}")
+
+print(f"\\nFin — {len(ISSUES)} issue(s) envoyée(s).")
+`;
+
+  const blob = new Blob([scriptPy], {type: "text/x-python"});
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "envoyer_issues.py";
+  a.click();
+  alert(`Script généré pour ${avecPbs.length} étudiant(s).\\nLancez : python envoyer_issues.py`);
 });
 document.addEventListener("click", (ev) => {
   const th = ev.target.closest("th[data-cle]");
