@@ -818,6 +818,9 @@ GABARIT = """<!DOCTYPE html>
   .fiche h4 { font-size: 14.5px; margin-bottom: 7px; }
   .fiche .l { display: flex; justify-content: space-between; gap: 10px; font-size: 13px; padding: 2px 0; color: #c3cbd4; }
   .pb { color: #ff9c92; font-size: 12.5px; margin-top: 6px; line-height: 1.45; }
+  .fiche-alerte { border-color: #f85149 !important; background: #1a0d0d !important; }
+  .fiche-alerte h4 { color: #ff7b72; }
+  .l-pb { font-size: 13px; color: #ffa198; padding: 2px 0; line-height: 1.4; }
   a { color: var(--bleu); text-decoration: none; }
   .vide { text-align: center; color: var(--doux); padding: 40px; }
 </style>
@@ -917,9 +920,17 @@ function lignes() {
 }
 
 function detail(e) {
+  const toutPbs = problemes(e);
+  const carteAlerte = toutPbs.length
+    ? `<div class="fiche fiche-alerte">
+        <h4>⚠️ Points bloquants (${toutPbs.length})</h4>
+        ${toutPbs.map(x => `<div class="l-pb">• ${x}</div>`).join("")}
+       </div>`
+    : "";
+
   const cartes = tdsAffiches().map(td => {
     const d = e.tds[td], b = DONNEES.bareme[td], n = d.note.detail;
-    const pbs = d.audit.details.slice(0, 4).map(x => `• ${x}`).join("<br>");
+    const pbs = d.audit.details.map(x => `• ${x}`).join("<br>");
     return `<div class="fiche">
       <h4>${td.toUpperCase()} — ${DONNEES.libelles[td]}</h4>
       <div class="l"><span>Présence</span><span>${d.presence ? "✅" : "❌"} ${n.presence}/${b.presence}</span></div>
@@ -934,7 +945,7 @@ function detail(e) {
       ${pbs ? `<div class="pb">${pbs}</div>` : ""}
     </div>`;
   }).join("");
-  return `<tr class="detail"><td colspan="9"><div class="grille">${cartes}</div></td></tr>`;
+  return `<tr class="detail"><td colspan="9"><div class="grille">${carteAlerte}${cartes}</div></td></tr>`;
 }
 
 function rendre() {
