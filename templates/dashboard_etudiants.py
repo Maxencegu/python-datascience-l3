@@ -1001,7 +1001,12 @@ function rendre() {
         <td>${cellulesOk}/${cellulesTot}<div class="barre"><span style="width:${cellulesTot ? 100 * cellulesOk / cellulesTot : 0}%"></span></div></td>
         <td>${gits || pastille("neutre", "—")}</td>
         <td><b>${s.obtenu}</b>/${s.max}<div class="meta">${s.pct} %</div></td>
-        <td>${pbs.length ? pastille("ko", pbs.length + " à voir") : pastille("ok", "tout est propre")}</td>
+        <td>${(()=>{
+          const avertis = tds.reduce((n,td)=>n+(e.tds[td].audit.details||[]).length,0);
+          if (pbs.length) return pastille("ko", pbs.length + " à voir");
+          if (avertis) return pastille("attente", avertis + " avertissement" + (avertis>1?"s":""));
+          return pastille("ok", "tout est propre");
+        })()}</td>
       </tr>` + `<tr class="detail" id="d${i}" style="display:none"><td colspan="9"></td></tr>`;
     }).join("");
 
