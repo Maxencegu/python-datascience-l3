@@ -856,7 +856,8 @@ GABARIT = """<!DOCTYPE html>
     <select id="selectTd"></select>
     <button id="btnProblemes">Problèmes uniquement</button>
     <button id="btnSansDepot">Sans dépôt</button>
-    <button id="btnIssues" style="margin-left:auto;background:#1f6feb;border-color:#388bfd;color:#e6edf3">📋 Générer le script d'issues</button>
+    <input id="filtreIssue" placeholder="Username GitHub (optionnel)" style="margin-left:auto;width:220px">
+    <button id="btnIssues" style="background:#1f6feb;border-color:#388bfd;color:#e6edf3">📋 Générer le script d'issues</button>
     <span class="meta" id="compteur"></span>
   </div>
 
@@ -1038,7 +1039,9 @@ document.getElementById("btnSansDepot").addEventListener("click", (ev) => {
 });
 
 document.getElementById("btnIssues").addEventListener("click", () => {
-  const avecPbs = DONNEES.etudiants.filter(e => e.username && e.depot_ok && problemes(e).length > 0);
+  const filtre = document.getElementById("filtreIssue").value.trim().toLowerCase();
+  const avecPbs = DONNEES.etudiants.filter(e => e.username && e.depot_ok && problemes(e).length > 0
+    && (!filtre || e.username.toLowerCase() === filtre));
   if (avecPbs.length === 0) { alert("Aucun étudiant avec des points bloquants."); return; }
 
   function corpsIssue(e) {
