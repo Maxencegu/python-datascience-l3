@@ -469,6 +469,72 @@ def auditer_notebook(source, td):
 
 
 # ════════════════════════════════════════════════════════════════════════════
+#  Audit spécifique TD02 (cycle + propreté)
+# ════════════════════════════════════════════════════════════════════════════
+def audit_td02_cycle(gh, depot, proprietaire, branches):
+    """TD02 : vérifie le cycle Git via API GitHub (4 points)."""
+    result = {"present": True, "ok": 0, "total": 4, "details": [], "placeholders": 0}
+
+    # Check 1 : td02_enonce.ipynb présent sur main
+    contenu_main = gh.api(f"repos/{depot}/contents?ref=main") or []
+    noms_main = {item["name"] for item in contenu_main if isinstance(item, dict)}
+    if "td02_enonce.ipynb" in noms_main:
+        result["ok"] += 1
+    else:
+        result["details"].append("td02_enonce.ipynb absent de main")
+
+    # Check 2 : Pull Request dev_td02 → main créée
+    prs = gh.api(f"repos/{depot}/pulls?state=all&base=main&head={proprietaire}:dev_td02") or []
+    pr = next((p for p in prs if p.get("merged_at")), prs[0] if prs else None)
+    if pr:
+        result["ok"] += 1
+    else:
+        result["details"].append("Pull Request dev_td02 → main non créée")
+
+    # Check 3 : Pull Request mergée
+    if pr and pr.get("merged_at"):
+        result["ok"] += 1
+    elif pr:
+        result["details"].append("Pull Request non mergée")
+
+    # Check 4 : branche dev_td02 supprimée
+    if "dev_td02" not in branches:
+        result["ok"] += 1
+    else:
+        result["details"].append("Branche dev_td02 non supprimée")
+
+    return result
+
+
+_FICHIER_ATTENDU = re.compile(
+    r'^(README\.md|\.gitignore|\.github|td\d+_enonce\.ipynb|perso)$'
+)
+
+
+def proprete_depot(gh, depot, branches):
+    """Propreté du dépôt : -1 par fichier ou branche inutile (appliqué à chaque TD ≥ td02)."""
+    result = {"penalite": 0, "details": []}
+
+    # Branches inutiles (toutes sauf main)
+    for branche in branches:
+        if branche != "main":
+            result["penalite"] += 1
+            result["details"].append(f"branche inutile : {branche}")
+
+    # Fichiers inattendus à la racine de main
+    contenu = gh.api(f"repos/{depot}/contents?ref=main") or []
+    for item in contenu:
+        if not isinstance(item, dict):
+            continue
+        nom = item["name"]
+        if not _FICHIER_ATTENDU.match(nom):
+            result["penalite"] += 1
+            result["details"].append(f"fichier inutile : {nom}")
+
+    return result
+
+
+# ════════════════════════════════════════════════════════════════════════════
 #  Cycle Git d'un TD
 # ════════════════════════════════════════════════════════════════════════════
 def cycle_git(gh, depot, proprietaire, td, branches):
@@ -519,7 +585,7 @@ def cycle_git(gh, depot, proprietaire, td, branches):
 # ════════════════════════════════════════════════════════════════════════════
 #  Collecte + notes
 # ════════════════════════════════════════════════════════════════════════════
-def notes_du_td(td, presence, quiz, audit, git):
+def notes_du_td(td, presence, quiz, audit, git, proprete=None):
     bareme = BAREME[td]
     notes = {"presence": 0.0, "notebook": 0.0, "quiz": 0.0, "mp": 0.0}
 
@@ -539,8 +605,10 @@ def notes_du_td(td, presence, quiz, audit, git):
             notes["quiz"] = round(bareme["quiz"] * quiz["obtenu"] / total, 1)
 
     obtenu = sum(notes.values())
+    penalite = (proprete or {}).get("penalite", 0)
+    obtenu = max(0.0, obtenu - penalite)
     maximum = sum(bareme.values())
-    return {"detail": notes, "obtenu": round(obtenu, 1), "max": maximum}
+    return {"detail": notes, "obtenu": round(obtenu, 1), "max": maximum, "penalite": penalite}
 
 
 def collecter(tds, hors_ligne=False, rafraichir=False):
@@ -592,12 +660,19 @@ def _traiter_etudiant(email, fiche, tds, gh, presences, quiz):
         if depot_ok:
             branches = [b["name"] for b in (gh.api(f"repos/{depot}/branches?per_page=100") or [])]
 
+    # Propreté calculée une fois : pénalité appliquée à chaque TD ≥ td02
+    proprete_repo = proprete_depot(gh, depot, branches) if depot_ok else None
+
     donnees_tds = {}
     for td in tds:
         audit = {"present": False, "ok": 0, "total": 0, "details": [], "placeholders": 0}
+        proprete = proprete_repo if td >= PREMIER_TD_GIT else None
         git = None
         if depot_ok:
-            audit = auditer_notebook(gh.fichier(depot, f"{td}_enonce.ipynb"), td)
+            if td == "td02":
+                audit = audit_td02_cycle(gh, depot, username, branches)
+            else:
+                audit = auditer_notebook(gh.fichier(depot, f"{td}_enonce.ipynb"), td)
             if td >= PREMIER_TD_GIT:
                 git = cycle_git(gh, depot, username, td, branches)
 
@@ -606,12 +681,13 @@ def _traiter_etudiant(email, fiche, tds, gh, presences, quiz):
         presence = (email in td_presences
                     or (numero and numero in td_presences))
         presence_le = td_presences.get(email) or (td_presences.get(numero) if numero else None)
-        note = notes_du_td(td, presence, quiz.get(td, {}).get(email), audit, git)
+        note = notes_du_td(td, presence, quiz.get(td, {}).get(email), audit, git, proprete)
         donnees_tds[td] = {
             "presence": presence,
             "presence_le": presence_le,
             "quiz": quiz.get(td, {}).get(email),
             "audit": audit,
+            "proprete": proprete,
             "git": git,
             "note": note,
         }
@@ -808,6 +884,8 @@ function problemes(e) {
         if (d.git.checks === "failure") liste.push(`${td} : Actions en échec`);
       }
     }
+    if (d.proprete && d.proprete.penalite)
+      liste.push(`${td} : -${d.proprete.penalite} propreté (${d.proprete.details[0] || ""})`);
   }
   return liste;
 }
@@ -846,6 +924,7 @@ function detail(e) {
       <h4>${td.toUpperCase()} — ${DONNEES.libelles[td]}</h4>
       <div class="l"><span>Présence</span><span>${d.presence ? "✅" : "❌"} ${n.presence}/${b.presence}</span></div>
       <div class="l"><span>Notebook (${d.audit.ok}/${d.audit.total} cellules)</span><span>${n.notebook}/${b.notebook}</span></div>
+      ${d.proprete && d.proprete.penalite ? `<div class="l"><span>Pénalité propreté</span><span style="color:#ff7b72">-${d.proprete.penalite} pt${d.proprete.penalite > 1 ? "s" : ""} — ${d.proprete.details.slice(0,3).join(", ")}</span></div>` : ""}
       ${b.quiz ? `<div class="l"><span>Quiz</span><span>${n.quiz}/${b.quiz}</span></div>` : ""}
       ${b.mp ? `<div class="l"><span>Mini-projet</span><span>${n.mp}/${b.mp}</span></div>` : ""}
       ${d.git ? `<div class="l"><span>Cycle Git</span><span>${etatGit(d.git)}</span></div>
