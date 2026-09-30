@@ -511,13 +511,21 @@ _FICHIER_ATTENDU = re.compile(
 )
 
 
-def proprete_depot(gh, depot, branches):
-    """Propreté du dépôt : -1 par fichier ou branche inutile (appliqué à chaque TD ≥ td02)."""
+def proprete_depot(gh, depot, branches, td):
+    """Propreté du dépôt : -1 par fichier ou branche inutile.
+
+    TD02 : seules main et dev_td03 sont autorisées (dev_td03 créée en avance).
+    TD03+ : seule main est autorisée.
+    """
+    if td == "td02":
+        branches_ok = {"main", "dev_td03"}
+    else:
+        branches_ok = {"main"}
+
     result = {"penalite": 0, "details": []}
 
-    # Branches inutiles (toutes sauf main)
     for branche in branches:
-        if branche != "main":
+        if branche.lower() not in branches_ok:
             result["penalite"] += 1
             result["details"].append(f"branche inutile : {branche}")
 
@@ -660,13 +668,10 @@ def _traiter_etudiant(email, fiche, tds, gh, presences, quiz):
         if depot_ok:
             branches = [b["name"] for b in (gh.api(f"repos/{depot}/branches?per_page=100") or [])]
 
-    # Propreté calculée une fois : pénalité appliquée à chaque TD ≥ td02
-    proprete_repo = proprete_depot(gh, depot, branches) if depot_ok else None
-
     donnees_tds = {}
     for td in tds:
         audit = {"present": False, "ok": 0, "total": 0, "details": [], "placeholders": 0}
-        proprete = proprete_repo if td >= PREMIER_TD_GIT else None
+        proprete = None
         git = None
         if depot_ok:
             if td == "td02":
@@ -675,6 +680,7 @@ def _traiter_etudiant(email, fiche, tds, gh, presences, quiz):
                 audit = auditer_notebook(gh.fichier(depot, f"{td}_enonce.ipynb"), td)
             if td >= PREMIER_TD_GIT:
                 git = cycle_git(gh, depot, username, td, branches)
+                proprete = proprete_depot(gh, depot, branches, td)
 
         numero = fiche.get("numero", "")
         td_presences = presences.get(td, {})
