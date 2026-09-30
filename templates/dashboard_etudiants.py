@@ -1096,7 +1096,7 @@ document.getElementById("btnIssues").addEventListener("click", () => {
     + "        'gh', 'api', 'repos/' + iss['repo'] + '/issues',\\n"
     + "        '-f', 'title=' + iss['titre'],\\n"
     + "        '-f', 'body=' + iss['corps'],\\n"
-    + "        '-f', 'labels=feedback',\\n"
+    + "        '-F', 'labels[]=feedback',\\n"
     + "    ]\\n"
     + "    result = subprocess.run(cmd, capture_output=True, text=True, encoding='utf-8')\\n"
     + "    if result.returncode == 0:\\n"
