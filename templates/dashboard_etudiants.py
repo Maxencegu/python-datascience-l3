@@ -1081,31 +1081,30 @@ document.getElementById("btnIssues").addEventListener("click", () => {
                titre: "Points à corriger — Python & Data Science", corps }];
   });
 
-  const scriptPy = `#!/usr/bin/env python3
-# Script généré le ${new Date().toLocaleDateString("fr-FR")} depuis le tableau de bord.
-# Crée une issue GitHub pour chaque étudiant ayant des points bloquants.
-# Prérequis : gh auth login
-# Usage : python envoyer_issues.py
-import subprocess, json, sys
-
-ISSUES = ${JSON.stringify(issues, null, 2).replace(/\\\\n/g, "\\\\n")}
-
-for iss in ISSUES:
-    cmd = [
-        "gh", "api", f"repos/{iss['repo']}/issues",
-        "-f", f"title={iss['titre']}",
-        "-f", f"body={iss['corps']}",
-        "-f", "labels=feedback",
-    ]
-    result = subprocess.run(cmd, capture_output=True, text=True)
-    if result.returncode == 0:
-        data = json.loads(result.stdout)
-        print(f"  ✅ {iss['nom']} → {data.get('html_url', '?')}")
-    else:
-        print(f"  ❌ {iss['nom']} ({iss['repo']}) : {result.stderr.strip()}")
-
-print(f"\\nFin — {len(ISSUES)} issue(s) envoyée(s).")
-`;
+  const issuesJson = JSON.stringify(issues, null, 2);
+  const scriptPy = "# -*- coding: utf-8 -*-\\n"
+    + "# Script genere le " + new Date().toLocaleDateString("fr-FR") + " depuis le tableau de bord.\\n"
+    + "# Cree une issue GitHub pour chaque etudiant ayant des points bloquants.\\n"
+    + "# Prerequis : gh auth login\\n"
+    + "# Usage : python envoyer_issues.py\\n"
+    + "import subprocess, json, sys\\n\\n"
+    + "ISSUES = json.loads(r\\\"\\\"\\\"\\n"
+    + issuesJson + "\\n"
+    + "\\\"\\\"\\\")\\n\\n"
+    + "for iss in ISSUES:\\n"
+    + "    cmd = [\\n"
+    + "        'gh', 'api', 'repos/' + iss['repo'] + '/issues',\\n"
+    + "        '-f', 'title=' + iss['titre'],\\n"
+    + "        '-f', 'body=' + iss['corps'],\\n"
+    + "        '-f', 'labels=feedback',\\n"
+    + "    ]\\n"
+    + "    result = subprocess.run(cmd, capture_output=True, text=True, encoding='utf-8')\\n"
+    + "    if result.returncode == 0:\\n"
+    + "        data = json.loads(result.stdout)\\n"
+    + "        print('  OK: ' + iss['nom'] + ' -> ' + data.get('html_url', '?'))\\n"
+    + "    else:\\n"
+    + "        print('  ERREUR: ' + iss['nom'] + ' (' + iss['repo'] + '): ' + result.stderr.strip())\\n"
+    + "\\nprint('\\\\nFin - ' + str(len(ISSUES)) + ' issue(s) envoyee(s).')\\n";
 
   const blob = new Blob([scriptPy], {type: "text/x-python"});
   const a = document.createElement("a");
