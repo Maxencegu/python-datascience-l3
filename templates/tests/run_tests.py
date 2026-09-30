@@ -46,14 +46,44 @@ print("🔍 Vérification des résultats...\n")
 with open(expected_path, encoding="utf-8") as f:
     expected = json.load(f)
 
+
+def _titre_cellule(cell, idx):
+    """Retourne le titre lisible de la cellule (# @title ou première ligne utile)."""
+    source = cell.source if isinstance(cell.source, str) else "".join(cell.source)
+    for ligne in source.splitlines():
+        ligne = ligne.strip()
+        if ligne.startswith("# @title"):
+            titre = ligne.replace("# @title", "").strip()
+            if titre:
+                return titre
+        if ligne.startswith("#") and len(ligne) > 2:
+            return ligne.lstrip("# ").strip()
+    for ligne in source.splitlines():
+        if ligne.strip() and not ligne.strip().startswith("#"):
+            return ligne.strip()[:70]
+    return f"cellule {idx}"
+
+
+def _extrait_code(cell, max_lignes=3):
+    """Premières lignes de code significatives (sans commentaires ni lignes vides)."""
+    source = cell.source if isinstance(cell.source, str) else "".join(cell.source)
+    lignes = [
+        l.rstrip() for l in source.splitlines()
+        if l.strip() and not l.strip().startswith("#")
+    ]
+    extrait = "\n       ".join(lignes[:max_lignes])
+    if len(lignes) > max_lignes:
+        extrait += f"\n       … ({len(lignes) - max_lignes} ligne(s) supplémentaire(s))"
+    return extrait
+
+
 errors = []
 for cell_idx, exp in expected.items():
     idx = int(cell_idx)
     if idx >= len(nb.cells) or nb.cells[idx].cell_type != "code":
         errors.append(
-            f"  Cellule {cell_idx}\n"
-            f"    la cellule n'existe pas ou n'est pas une cellule de code — "
-            f"avez-vous ajouté ou supprimé des cellules dans le notebook ?"
+            f"  ❌ Cellule {cell_idx} introuvable ou déplacée\n"
+            f"     → Avez-vous ajouté ou supprimé des cellules dans le notebook ?"
         )
         continue
     cell = nb.cells[idx]
@@ -63,21 +93,26 @@ for cell_idx, exp in expected.items():
             parts.append(out.get("text", ""))
         elif out.output_type in ("execute_result", "display_data"):
             texte = out.get("data", {}).get("text/plain", "")
-            # Même filtre que generate_expected.py : affichages HTML/image ignorés
             if not texte.startswith(("<IPython.core.display.", "<IPython.lib.display.")):
                 parts.append(texte)
     actual = "".join(parts).strip()
     if actual != exp.strip():
-        errors.append(
-            f"  Cellule {cell_idx}\n"
-            f"    attendu  : {exp.strip()!r}\n"
-            f"    obtenu   : {actual!r}"
-        )
+        titre = _titre_cellule(cell, idx)
+        code = _extrait_code(cell)
+        raison = "cellule jamais exécutée" if not actual else None
+        ligne_attendu = f"     Attendu  : {exp.strip()!r}"
+        ligne_obtenu = f"     Obtenu   : {actual!r}" + (f"  ← {raison}" if raison else "")
+        bloc = f"  ❌ {titre}\n"
+        if code:
+            bloc += f"     Code     : {code}\n"
+        bloc += f"{ligne_attendu}\n{ligne_obtenu}"
+        errors.append(bloc)
 
 if errors:
     print(f"❌ {len(errors)} test(s) échoué(s) :\n")
     for e in errors:
         print(e)
+        print()
     sys.exit(1)
 
 print(f"✅ Tous les tests passent ({len(expected)} cellules vérifiées)")
