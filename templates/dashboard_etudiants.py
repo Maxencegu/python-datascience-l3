@@ -908,7 +908,7 @@ function problemes(e) {
       }
     }
     if (d.proprete && d.proprete.penalite)
-      liste.push(`${td} : -${d.proprete.penalite} propreté (${d.proprete.details[0] || ""})`);
+      liste.push(`${td} : -${d.proprete.penalite} propreté (${d.proprete.details.join(", ")})`);
   }
   return liste;
 }
@@ -956,7 +956,7 @@ function detail(e) {
       <h4>${td.toUpperCase()} — ${DONNEES.libelles[td]}</h4>
       <div class="l"><span>Présence</span><span>${d.presence ? "✅" : "❌"} ${n.presence}/${b.presence}</span></div>
       <div class="l"><span>Notebook (${d.audit.ok}/${d.audit.total} cellules)</span><span>${n.notebook}/${b.notebook}</span></div>
-      ${d.proprete && d.proprete.penalite ? `<div class="l"><span>Pénalité propreté</span><span style="color:#ff7b72">-${d.proprete.penalite} pt${d.proprete.penalite > 1 ? "s" : ""} — ${d.proprete.details.slice(0,3).join(", ")}</span></div>` : ""}
+      ${d.proprete && d.proprete.penalite ? `<div class="l"><span>Pénalité propreté</span><span style="color:#ff7b72">-${d.proprete.penalite} pt${d.proprete.penalite > 1 ? "s" : ""} — ${d.proprete.details.join(", ")}</span></div>` : ""}
       ${b.quiz ? `<div class="l"><span>Quiz</span><span>${n.quiz}/${b.quiz}</span></div>` : ""}
       ${b.mp ? `<div class="l"><span>Mini-projet</span><span>${n.mp}/${b.mp}</span></div>` : ""}
       ${d.git ? `<div class="l"><span>Cycle Git</span><span>${etatGit(d.git)}</span></div>
@@ -1060,7 +1060,7 @@ document.getElementById("btnIssues").addEventListener("click", () => {
       else { generaux.push(p); }
     }
     // Ne garder que les TDs où l'étudiant était présent
-    const tdsPresents = Object.keys(parTd).filter(td => e.tds[td] && e.tds[td].presence);
+    const tdsPresents = Object.keys(parTd).filter(td => e.tds[td]);
     if (tdsPresents.length === 0 && generaux.length === 0) return null;
     let corps = "Bonjour,\\n\\nVoici les points à corriger pour maximiser votre note en Python & Data Science.\\n\\n";
     for (const td of tdsPresents) {
