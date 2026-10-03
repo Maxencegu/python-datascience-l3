@@ -885,11 +885,12 @@ function scoreEtudiant(e) {
   return { obtenu: Math.round(obtenu * 10) / 10, max, pct: max ? Math.round(1000 * obtenu / max) / 10 : 0 };
 }
 
-function problemes(e) {
+function problemes(e, tds) {
+  tds = tds || tdsAffiches();
   const liste = [];
   if (!e.username) liste.push("pseudo GitHub inconnu");
   else if (!e.depot_ok) liste.push("dépôt introuvable ou privé");
-  for (const td of tdsAffiches()) {
+  for (const td of tds) {
     const d = e.tds[td], b = DONNEES.bareme[td];
     if (!d.presence) liste.push(`${td} : absent`);
     if (e.depot_ok && !d.audit.present) liste.push(`${td} : notebook absent de main`);
@@ -1050,7 +1051,7 @@ document.getElementById("btnIssues").addEventListener("click", () => {
   if (avecPbs.length === 0) { alert("Aucun étudiant avec des points bloquants."); return; }
 
   function corpsIssue(e) {
-    const pbs = problemes(e);
+    const pbs = problemes(e, DONNEES.tds);
     // Regrouper par TD
     const parTd = {};
     const generaux = [];
