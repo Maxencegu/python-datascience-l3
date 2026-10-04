@@ -840,9 +840,19 @@ GABARIT = """<!DOCTYPE html>
   .l-pb { font-size: 13px; color: #ffa198; padding: 2px 0; line-height: 1.4; }
   a { color: var(--bleu); text-decoration: none; }
   .vide { text-align: center; color: var(--doux); padding: 40px; }
+  #toast {
+    position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%);
+    background: var(--carte); border: 1px solid var(--bordure-claire); border-radius: 10px;
+    padding: 12px 22px; font-size: 14px; color: var(--texte);
+    box-shadow: 0 4px 24px rgba(0,0,0,.5); z-index: 9999;
+    opacity: 0; transition: opacity .2s; pointer-events: none; white-space: pre-line;
+    text-align: center; max-width: 420px;
+  }
+  #toast.visible { opacity: 1; pointer-events: auto; }
 </style>
 </head>
 <body>
+  <div id="toast"></div>
   <div class="entete">
     <div class="fil">Python Data Science — UPJV Amiens</div>
     <h1>Tableau de bord de la promo</h1>
@@ -872,6 +882,15 @@ let triCle = "nom", triSens = 1, filtreProblemes = false, filtreSansDepot = fals
 
 const pastille = (etat, texte) => `<span class="pastille ${etat}">${texte}</span>`;
 const jour = (iso) => iso ? new Date(iso).toLocaleDateString("fr-FR") : "—";
+
+let _toastTimer;
+function toast(msg) {
+  const el = document.getElementById("toast");
+  el.textContent = msg;
+  el.classList.add("visible");
+  clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(() => el.classList.remove("visible"), 4000);
+}
 
 function tdsAffiches() {
   const choix = document.getElementById("selectTd").value;
@@ -1048,7 +1067,7 @@ document.getElementById("btnIssues").addEventListener("click", () => {
   const filtre = document.getElementById("filtreIssue").value.trim().toLowerCase();
   const avecPbs = DONNEES.etudiants.filter(e => e.username && e.depot_ok && problemes(e).length > 0
     && (!filtre || e.username.toLowerCase() === filtre));
-  if (avecPbs.length === 0) { alert("Aucun étudiant avec des points bloquants."); return; }
+  if (avecPbs.length === 0) { toast("Aucun étudiant avec des points bloquants."); return; }
 
   function corpsIssue(e) {
     const pbs = problemes(e, DONNEES.tds);
@@ -1111,7 +1130,7 @@ document.getElementById("btnIssues").addEventListener("click", () => {
   a.href = URL.createObjectURL(blob);
   a.download = "envoyer_issues.py";
   a.click();
-  alert(`Script généré pour ${avecPbs.length} étudiant(s).\\nLancez : python envoyer_issues.py`);
+  toast(`Script généré pour ${avecPbs.length} étudiant(s).\\nLancez : python envoyer_issues.py`);
 });
 document.addEventListener("click", (ev) => {
   const th = ev.target.closest("th[data-cle]");
