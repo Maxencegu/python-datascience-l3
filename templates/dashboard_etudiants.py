@@ -294,6 +294,10 @@ def construire_annuaire(presences, quiz):
                 fiche["email"] = email
                 fiche["nom"] = fiche["nom"] or colonne(ligne, "nom", "prenom") or colonne(ligne, "nom")
                 fiche["numero"] = fiche["numero"] or colonne(ligne, "numero", "etudiant")
+                classe = (colonne(ligne, "classe") or colonne(ligne, "filiere")
+                          or colonne(ligne, "niveau") or colonne(ligne, "promotion"))
+                if classe and not fiche.get("classe"):
+                    fiche["classe"] = classe
 
     for td in sorted(quiz):
         for email, reponse in quiz[td].items():
