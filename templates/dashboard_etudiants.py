@@ -1061,7 +1061,7 @@ document.getElementById("btnIssues").addEventListener("click", () => {
       else { generaux.push(p); }
     }
     // Ne garder que les TDs où l'étudiant était présent
-    const tdsPresents = Object.keys(parTd).filter(td => e.tds[td]);
+    const tdsPresents = Object.keys(parTd).filter(td => e.tds[td] && e.tds[td].presence);
     if (tdsPresents.length === 0 && generaux.length === 0) return null;
     let corps = "Bonjour,\\n\\nVoici les points à corriger pour maximiser votre note en Python & Data Science.\\n\\n";
     for (const td of tdsPresents) {
