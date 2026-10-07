@@ -1069,7 +1069,7 @@ document.getElementById("btnSansDepot").addEventListener("click", (ev) => {
 
 document.getElementById("btnIssues").addEventListener("click", () => {
   const filtre = document.getElementById("filtreIssue").value.trim().toLowerCase();
-  const avecPbs = DONNEES.etudiants.filter(e => e.username && e.depot_ok && problemes(e).length > 0
+  const avecPbs = DONNEES.etudiants.filter(e => e.username && e.depot_ok && problemes(e, DONNEES.tds).length > 0
     && (!filtre || e.username.toLowerCase() === filtre));
   if (avecPbs.length === 0) { toast("Aucun étudiant avec des points bloquants."); return; }
 
