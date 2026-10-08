@@ -10,8 +10,8 @@ html_content = """<!DOCTYPE html>
     background: #0d1117;
     color: #e6edf3;
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-    font-size: 15px;
-    padding: 32px;
+    font-size: 14px;
+    padding: 18px 34px;
   }
   .breadcrumb {
     text-align: center;
@@ -19,26 +19,26 @@ html_content = """<!DOCTYPE html>
     font-size: 12px;
     letter-spacing: 0.15em;
     text-transform: uppercase;
-    margin-bottom: 10px;
+    margin-bottom: 6px;
   }
   h1 {
     text-align: center;
     color: #58a6ff;
-    font-size: 32px;
+    font-size: 28px;
     font-weight: 700;
-    margin-bottom: 10px;
+    margin-bottom: 6px;
   }
   .subtitle {
     text-align: center;
     color: #8b949e;
-    font-size: 14px;
-    margin-bottom: 28px;
+    font-size: 13px;
+    margin-bottom: 16px;
   }
   .cols {
     display: grid;
     grid-template-columns: 1fr 1fr 1fr;
-    gap: 20px;
-    margin-bottom: 20px;
+    gap: 14px;
+    margin-bottom: 14px;
   }
   .card {
     background: #161b22;
@@ -47,7 +47,7 @@ html_content = """<!DOCTYPE html>
     overflow: hidden;
   }
   .card-header {
-    padding: 14px 18px 10px;
+    padding: 12px 18px 8px;
     border-bottom: 1px solid #21262d;
     display: flex;
     align-items: center;
@@ -66,7 +66,7 @@ html_content = """<!DOCTYPE html>
     font-weight: 700;
   }
   .card-header .icon { font-size: 20px; }
-  .card-body { padding: 18px; }
+  .card-body { padding: 14px 16px; }
   .card.blue { border-top: 3px solid #1f6feb; }
   .card.violet { border-top: 3px solid #8b5cf6; }
   .card.green { border-top: 3px solid #3fb950; }
@@ -77,19 +77,19 @@ html_content = """<!DOCTYPE html>
   .section-title {
     color: #58a6ff;
     font-weight: 600;
-    font-size: 14px;
-    margin-bottom: 6px;
-    margin-top: 14px;
+    font-size: 13px;
+    margin-bottom: 4px;
+    margin-top: 10px;
   }
   .section-title:first-child { margin-top: 0; }
-  p { color: #8b949e; font-size: 13.5px; line-height: 1.6; }
+  p { color: #8b949e; font-size: 13px; line-height: 1.55; }
 
   ol { padding-left: 18px; }
   ol li {
     color: #8b949e;
-    font-size: 13.5px;
-    line-height: 1.7;
-    margin-bottom: 2px;
+    font-size: 13px;
+    line-height: 1.65;
+    margin-bottom: 1px;
   }
   code {
     color: #79c0ff;
@@ -105,16 +105,16 @@ html_content = """<!DOCTYPE html>
     background: #200d0d;
     border: 1px solid #f85149;
     border-radius: 6px;
-    padding: 12px 14px;
-    margin-top: 14px;
+    padding: 10px 12px;
+    margin-top: 12px;
   }
   .alert .alert-title {
     color: #f85149;
     font-weight: 700;
-    font-size: 13px;
-    margin-bottom: 4px;
+    font-size: 12.5px;
+    margin-bottom: 3px;
   }
-  .alert p { color: #e6edf3; font-size: 13px; }
+  .alert p { color: #e6edf3; font-size: 12.5px; }
 
   .step-check {
     color: #3fb950;
@@ -123,16 +123,16 @@ html_content = """<!DOCTYPE html>
   .step-indent {
     padding-left: 16px;
     color: #8b949e;
-    font-size: 13px;
-    line-height: 1.6;
-    margin-top: 2px;
-    margin-bottom: 4px;
+    font-size: 12.5px;
+    line-height: 1.5;
+    margin-top: 1px;
+    margin-bottom: 2px;
   }
   .note {
     color: #8b949e;
-    font-size: 12.5px;
-    line-height: 1.6;
-    margin-top: 12px;
+    font-size: 12px;
+    line-height: 1.55;
+    margin-top: 10px;
   }
 
   .bottom-card {
@@ -161,18 +161,18 @@ html_content = """<!DOCTYPE html>
     text-transform: uppercase;
     color: #8b949e;
   }
-  .bottom-body { padding: 18px 22px; }
+  .bottom-body { padding: 14px 20px; }
   .bottom-body ol { padding-left: 20px; }
   .bottom-body ol li {
     color: #8b949e;
-    font-size: 13.5px;
-    line-height: 1.8;
+    font-size: 13px;
+    line-height: 1.7;
     font-family: 'SFMono-Regular', Consolas, monospace;
   }
   .bottom-body .warning {
-    margin-top: 12px;
+    margin-top: 10px;
     color: #d29922;
-    font-size: 13px;
+    font-size: 12.5px;
     font-family: 'SFMono-Regular', Consolas, monospace;
   }
 </style>
@@ -279,7 +279,7 @@ OUTPUT = r"assignments/td02_introduction_aux_concepts_de_github/images/07_utilis
 
 with sync_playwright() as p:
     browser = p.chromium.launch()
-    page = browser.new_page(viewport={"width": 1200, "height": 950}, device_scale_factor=2)
+    page = browser.new_page(viewport={"width": 1400, "height": 900}, device_scale_factor=2)
     page.set_content(html_content, wait_until="networkidle")
     page.screenshot(path=OUTPUT, full_page=True)
     browser.close()
