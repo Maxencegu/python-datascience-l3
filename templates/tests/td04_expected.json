@@ -1,6 +1,5 @@
 {
   "13": "<class 'list'>\n4",
-  "15": "Help on built-in function pow in module builtins:\n\npow(base, exp, mod=None)\n    Equivalent to base**exp with 2 arguments or base**exp % mod with 3 arguments\n\n    Some types, such as ints, are able to use a more efficient algorithm when\n    invoked using the three argument form.",
   "17": "[20.0, 18.0, 11.25, 10.75, 9.5]",
   "22": "poolhouse\nPOOLHOUSE\n3",
   "24": "2\n1",
