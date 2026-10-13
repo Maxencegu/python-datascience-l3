@@ -1079,13 +1079,13 @@ document.getElementById("btnSansDepot").addEventListener("click", (ev) => {
 
 document.getElementById("btnIssues").addEventListener("click", () => {
   const filtre = document.getElementById("filtreIssue").value.trim().toLowerCase();
-  const avecPbs = DONNEES.etudiants.filter(e => e.username && e.depot_ok && problemes(e, DONNEES.tds).length > 0
+  const eligibles = DONNEES.etudiants.filter(e => e.username && e.depot_ok
+    && Object.values(e.tds).some(t => t.presence)
     && (!filtre || e.username.toLowerCase() === filtre));
-  if (avecPbs.length === 0) { toast("Aucun étudiant avec des points bloquants."); return; }
+  if (eligibles.length === 0) { toast("Aucun étudiant éligible (présent + dépôt OK)."); return; }
 
   function corpsIssue(e) {
     const pbs = problemes(e, DONNEES.tds);
-    // Regrouper par TD
     const parTd = {};
     const generaux = [];
     for (const p of pbs) {
@@ -1093,9 +1093,11 @@ document.getElementById("btnIssues").addEventListener("click", () => {
       if (m) { (parTd[m[1].toLowerCase()] = parTd[m[1].toLowerCase()] || []).push(m[2]); }
       else { generaux.push(p); }
     }
-    // Ne garder que les TDs où l'étudiant était présent
     const tdsPresents = Object.keys(parTd).filter(td => e.tds[td] && e.tds[td].presence);
-    if (tdsPresents.length === 0 && generaux.length === 0) return null;
+    if (tdsPresents.length === 0 && generaux.length === 0) {
+      // Aucun point bloquant
+      return "Bonjour,\\n\\nBonne nouvelle : aucun point bloquant n'a été détecté sur votre dépôt en Python & Data Science.\\n\\nContinuez comme ça !\\n\\n_Message envoyé automatiquement depuis le tableau de bord enseignant._";
+    }
     let corps = "Bonjour,\\n\\nVoici les points à corriger pour maximiser votre note en Python & Data Science.\\n\\n";
     for (const td of tdsPresents) {
       corps += `**${td.toUpperCase()} :**\\n` + parTd[td].map(x => `- ${x}`).join("\\n") + "\\n\\n";
@@ -1108,17 +1110,23 @@ document.getElementById("btnIssues").addEventListener("click", () => {
     return corps;
   }
 
-  const issues = avecPbs.flatMap(e => {
-    const corps = corpsIssue(e);
-    if (!corps) return [];
-    return [{ repo: `${e.username}/upjv-python-datascience`, nom: e.nom,
-               titre: "Points à corriger — Python & Data Science", corps }];
+  const issues = eligibles.map(e => {
+    const pbs = problemes(e, DONNEES.tds);
+    const hasPbs = pbs.length > 0;
+    return {
+      repo: `${e.username}/upjv-python-datascience`,
+      nom: e.nom,
+      titre: hasPbs ? "Points à corriger — Python & Data Science" : "Bilan intermédiaire — Python & Data Science",
+      corps: corpsIssue(e)
+    };
   });
 
   const issuesJson = JSON.stringify(issues, null, 2);
+  const avecPbs = issues.filter(i => i.titre.startsWith("Points"));
+  const sansPbs = issues.length - avecPbs.length;
   const scriptPy = "# -*- coding: utf-8 -*-\\n"
     + "# Script genere le " + new Date().toLocaleDateString("fr-FR") + " depuis le tableau de bord.\\n"
-    + "# Cree une issue GitHub pour chaque etudiant ayant des points bloquants.\\n"
+    + "# Cree une issue GitHub pour chaque etudiant present (points bloquants ou bilan propre).\\n"
     + "# Prerequis : gh auth login\\n"
     + "# Usage : python envoyer_issues.py\\n"
     + "import subprocess, json, sys\\n\\n"
@@ -1144,7 +1152,7 @@ document.getElementById("btnIssues").addEventListener("click", () => {
   a.href = URL.createObjectURL(blob);
   a.download = "envoyer_issues.py";
   a.click();
-  toast(`Script généré pour ${avecPbs.length} étudiant(s).\\nLancez : python envoyer_issues.py`);
+  toast(`Script généré pour ${issues.length} étudiant(s) (${avecPbs.length} avec points bloquants, ${sansPbs} sans).\\nLancez : python envoyer_issues.py`);
 });
 document.addEventListener("click", (ev) => {
   const th = ev.target.closest("th[data-cle]");
