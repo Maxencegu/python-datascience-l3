@@ -290,9 +290,18 @@ def sauver_mapping(annuaire):
             redacteur.writerow(annuaire[email])
 
 
-def construire_annuaire(presences, quiz):
-    """Fusionne le cache, les feuilles de présence et les URL saisies au quiz."""
-    annuaire = charger_mapping()
+def construire_annuaire(presences, quiz, reconstruire=False):
+    """Fusionne les feuilles de présence et les URL saisies au quiz.
+
+    reconstruire=True (--reload complet) : repart d'un annuaire vide pour
+    éliminer les adresses obsolètes ; les usernames saisis manuellement dans
+    l'ancien fichier sont réinjectés sur les emails qui réapparaissent.
+    """
+    ancien = charger_mapping()
+    # Index email→username de l'ancien fichier pour préserver les saisies manuelles
+    usernames_anciens = {e: d["username"] for e, d in ancien.items() if d.get("username")}
+
+    annuaire = {} if reconstruire else ancien
 
     for td, chemins in fichiers_exports("presence").items():
         for chemin in chemins:
@@ -308,6 +317,8 @@ def construire_annuaire(presences, quiz):
                           or colonne(ligne, "niveau") or colonne(ligne, "promotion"))
                 if classe and not fiche.get("classe"):
                     fiche["classe"] = classe
+                if reconstruire and not fiche.get("username") and email in usernames_anciens:
+                    fiche["username"] = usernames_anciens[email]
 
     for td in sorted(quiz):
         for email, reponse in quiz[td].items():
@@ -316,6 +327,8 @@ def construire_annuaire(presences, quiz):
             username = username_depuis_url(reponse.get("url", ""))
             if username and not fiche.get("username"):
                 fiche["username"] = username
+            if reconstruire and not fiche.get("username") and email in usernames_anciens:
+                fiche["username"] = usernames_anciens[email]
             classe = reponse.get("classe", "")
             if classe and not fiche.get("classe"):
                 fiche["classe"] = classe
@@ -647,7 +660,7 @@ def notes_du_td(td, presence, quiz, audit, git, proprete=None):
 def collecter(tds, hors_ligne=False, rafraichir=False):
     presences = charger_presences()
     quiz = charger_quiz()
-    annuaire = construire_annuaire(presences, quiz)
+    annuaire = construire_annuaire(presences, quiz, reconstruire=True)
     gh = GitHub(hors_ligne=hors_ligne, rafraichir=rafraichir)
 
     # Filtre par classe si CLASSE_FILTRE est défini.
