@@ -4,7 +4,7 @@ Tableau de bord enseignant — suivi complet de la promo.
 Usage :
     python templates/dashboard_etudiants.py                 # tous les TD
     python templates/dashboard_etudiants.py --td td03       # un seul TD
-    python templates/dashboard_etudiants.py --refresh       # ignore le cache GitHub
+    python templates/dashboard_etudiants.py --reload        # table rase + recollecte
     python templates/dashboard_etudiants.py --offline       # aucune requête GitHub
 
 Pour chaque étudiant et chaque TD, le script collecte :
@@ -37,6 +37,7 @@ import io
 import json
 import os
 import re
+import shutil
 import subprocess
 import sys
 import time
@@ -100,6 +101,16 @@ GOOGLE_SHEETS = {
     "TD04 - Quiz (auto).csv": (
         "https://docs.google.com/spreadsheets/d/"
         "1y7Cp22_ziZ7MyJ3CkP_Vp0NazniyaYxZ_Kn3ZPSqcZA"
+        "/export?format=csv"
+    ),
+    "TD05 - Feuille de Présence (auto).csv": (
+        "https://docs.google.com/spreadsheets/d/"
+        "1nzu1emVYWlIA9CaICcnywFKsYxq04eU3ilNt_tBDl_A"
+        "/export?format=csv"
+    ),
+    "TD05 - Quiz (auto).csv": (
+        "https://docs.google.com/spreadsheets/d/"
+        "15KF71iLBwMYoLQaEQZtbepKs1qATIV87Bt8IUyMMUZs"
         "/export?format=csv"
     ),
 }
@@ -188,8 +199,64 @@ def colonne(ligne, *mots):
     return ""
 
 
+def archiver_exports_perimes():
+    """Déplace hors de réponses/ les exports qu'un fichier « (auto) » remplace.
+
+    Appelé par un rechargement complet : le dossier ne doit plus contenir que
+    les exports du jour, pour qu'aucune ligne périmée ne puisse revenir.
+    """
+    archives = os.path.join(REPONSES, "exports_perimes")
+    deplaces = []
+    for motif in ("presence", "quiz"):
+        trouves = {}
+        for nom in sorted(os.listdir(REPONSES) if os.path.isdir(REPONSES) else []):
+            if not nom.lower().endswith((".csv", ".zip", ".xlsx")):
+                continue
+            normalise = _normaliser(nom)
+            if _normaliser(motif) not in normalise:
+                continue
+            correspondance = re.search(r"td\s*0*(\d+)", normalise)
+            if correspondance:
+                trouves.setdefault(f"td{int(correspondance.group(1)):02d}", []).append(nom)
+        for noms in trouves.values():
+            automatiques = [n for n in noms if "auto" in _normaliser(n)]
+            if not automatiques:
+                continue
+            for nom in noms:
+                if nom in automatiques:
+                    continue
+                os.makedirs(archives, exist_ok=True)
+                destination = os.path.join(archives, nom)
+                if os.path.exists(destination):
+                    os.remove(destination)
+                os.replace(os.path.join(REPONSES, nom), destination)
+                deplaces.append(nom)
+    for nom in deplaces:
+        print(f"  📦 Export périmé archivé dans exports_perimes/ : {nom}")
+    return deplaces
+
+
+_EXPORTS_IGNORES = set()
+
+
+def _signaler_export_ignore(chemin):
+    """Prévient une seule fois par fichier écarté."""
+    if chemin in _EXPORTS_IGNORES:
+        return
+    _EXPORTS_IGNORES.add(chemin)
+    print(f"  ⏭️  Export périmé ignoré : {os.path.basename(chemin)}"
+          f" (remplacé par la version « (auto) »)")
+
+
 def fichiers_exports(motif):
-    """Fichiers de réponses/ dont le nom contient `motif`, groupés par TD."""
+    """Fichiers de réponses/ dont le nom contient `motif`, groupés par TD.
+
+    Quand un TD possède un export téléchargé automatiquement (« (auto) » dans
+    le nom), lui seul est lu : les anciens exports manuels du même TD sont
+    écartés. Sans cette règle, un export d'une séance passée réinjecte à chaque
+    reconstruction de l'annuaire des inscrits qui ont depuis été retirés du
+    Google Sheet — un .zip ou un .xlsx ne se voit pas à la lecture du dossier.
+    """
     trouves = {}
     if not os.path.isdir(REPONSES):
         return trouves
@@ -203,6 +270,14 @@ def fichiers_exports(motif):
         if correspondance:
             trouves.setdefault(f"td{int(correspondance.group(1)):02d}", []).append(
                 os.path.join(REPONSES, nom))
+    for td, chemins in trouves.items():
+        automatiques = [c for c in chemins
+                        if "auto" in _normaliser(os.path.basename(c))]
+        if automatiques and len(automatiques) < len(chemins):
+            for chemin in chemins:
+                if chemin not in automatiques:
+                    _signaler_export_ignore(chemin)
+            trouves[td] = automatiques
     return trouves
 
 
@@ -923,7 +998,7 @@ function scoreEtudiant(e) {
   return { obtenu: Math.round(obtenu * 10) / 10, max, pct: max ? Math.round(1000 * obtenu / max) / 10 : 0 };
 }
 
-function problemes(e, tds) {
+function problemes(e, tds, avecDetails) {
   tds = tds || tdsAffiches();
   const liste = [];
   if (!e.username) liste.push("pseudo GitHub inconnu");
@@ -932,8 +1007,10 @@ function problemes(e, tds) {
     const d = e.tds[td], b = DONNEES.bareme[td];
     if (!d.presence) liste.push(`${td} : absent`);
     if (e.depot_ok && !d.audit.present) liste.push(`${td} : notebook absent de main`);
-    else if (d.audit.total && d.audit.ok < d.audit.total)
+    else if (d.audit.total && d.audit.ok < d.audit.total) {
       liste.push(`${td} : ${d.audit.total - d.audit.ok}/${d.audit.total} cellules incorrectes`);
+      if (avecDetails) (d.audit.details || []).forEach(x => liste.push(`${td} : ${x}`));
+    }
     if (d.audit.placeholders) liste.push(`${td} : ${d.audit.placeholders} placeholder(s) ____`);
     if (b.quiz && !d.quiz) liste.push(`${td} : quiz non fait`);
     if (d.git) {
@@ -1090,7 +1167,7 @@ document.getElementById("btnIssues").addEventListener("click", () => {
   if (eligibles.length === 0) { toast("Aucun étudiant éligible (présent + dépôt OK)."); return; }
 
   function corpsIssue(e) {
-    const pbs = problemes(e, DONNEES.tds);
+    const pbs = problemes(e, DONNEES.tds, true);
     const parTd = {};
     const generaux = [];
     for (const p of pbs) {
@@ -1138,7 +1215,27 @@ document.getElementById("btnIssues").addEventListener("click", () => {
     + "ISSUES = json.loads(r\\\"\\\"\\\"\\n"
     + issuesJson + "\\n"
     + "\\\"\\\"\\\")\\n\\n"
+    + "def issues_ouvertes(repo):\\n"
+    + "    r = subprocess.run(['gh', 'issue', 'list', '--repo', repo, '--state', 'open',\\n"
+    + "                        '--search', 'Python & Data Science in:title',\\n"
+    + "                        '--json', 'number'],\\n"
+    + "                       capture_output=True, text=True, encoding='utf-8')\\n"
+    + "    if r.returncode != 0:\\n"
+    + "        return []\\n"
+    + "    return [o['number'] for o in json.loads(r.stdout or '[]')]\\n"
+    + "\\n"
     + "for iss in ISSUES:\\n"
+    + "    # Une seule issue vivante par etudiant : les precedentes sont perimees.\\n"
+    + "    for numero in issues_ouvertes(iss['repo']):\\n"
+    + "        f = subprocess.run(['gh', 'issue', 'close', str(numero), '--repo', iss['repo'],\\n"
+    + "                            '--reason', 'not planned', '--comment',\\n"
+    + "                            'Bilan remplace par une version a jour, voir issue suivante.'],\\n"
+    + "                           capture_output=True, text=True, encoding='utf-8')\\n"
+    + "        if f.returncode == 0:\\n"
+    + "            print('  ferme: ' + iss['repo'] + ' #' + str(numero))\\n"
+    + "        else:\\n"
+    + "            print('  ECHEC fermeture ' + iss['repo'] + ' #' + str(numero)\\n"
+    + "                  + ' : ' + (f.stderr or '').strip().split(chr(10))[0])\\n"
     + "    cmd = [\\n"
     + "        'gh', 'api', 'repos/' + iss['repo'] + '/issues',\\n"
     + "        '-f', 'title=' + iss['titre'],\\n"
@@ -1252,13 +1349,13 @@ def main():
     )
     analyseur.add_argument("td", nargs="?", help="limiter à un TD (ex. : td03)")
     analyseur.add_argument("--td", dest="td_option", help="limiter à un TD")
-    analyseur.add_argument("--refresh", action="store_true", help="ignorer le cache GitHub")
     analyseur.add_argument("--offline", action="store_true", help="aucune requête réseau")
     analyseur.add_argument("--out", default=SORTIE, help="fichier HTML de sortie")
     analyseur.add_argument(
         "--reload", action="store_true",
         help="recharge depuis GitHub et sauvegarde dans donnees.json\n"
-             "  sans --num_etudiant : recharge complète (supprime l'ancien JSON)\n"
+             "  sans --num_etudiant : table rase (supprime donnees.json,\n"
+             "    etudiants.csv et le cache GitHub, archive les exports périmés)\n"
              "  avec --num_etudiant : recharge uniquement cet étudiant dans le JSON",
     )
     analyseur.add_argument(
@@ -1299,7 +1396,7 @@ def main():
             print(f"🔄 Rechargement de {arguments.num_etudiant}…")
             etudiant = collecter_un(
                 arguments.num_etudiant, donnees["tds"],
-                hors_ligne=arguments.offline, rafraichir=arguments.refresh,
+                hors_ligne=arguments.offline, rafraichir=True,
             )
             if etudiant is None:
                 print(f"❌ Étudiant {arguments.num_etudiant!r} introuvable dans l'annuaire.")
@@ -1315,12 +1412,18 @@ def main():
                 donnees["etudiants"].append(etudiant)
             donnees["genere_le"] = datetime.now(timezone.utc).astimezone().strftime("%d/%m/%Y %H:%M")
         else:
-            # Rechargement complet
-            if os.path.exists(DONNEES_JSON):
-                os.remove(DONNEES_JSON)
-                print(f"🗑️  Ancienne sauvegarde supprimée.")
+            # Rechargement complet : table rase, plus aucun état local conservé.
+            if os.path.exists(MAPPING):
+                copie = MAPPING + ".avant_reload"
+                shutil.copyfile(MAPPING, copie)
+                print(f"🧾 Annuaire sauvegardé : {os.path.basename(copie)}")
+            for chemin in (DONNEES_JSON, MAPPING, CACHE):
+                if os.path.exists(chemin):
+                    os.remove(chemin)
+                    print(f"🗑️  Supprimé : {os.path.basename(chemin)}")
+            archiver_exports_perimes()
             print("📥 Lecture des exports et interrogation de GitHub…")
-            donnees = collecter(tds, hors_ligne=arguments.offline, rafraichir=arguments.refresh)
+            donnees = collecter(tds, hors_ligne=arguments.offline, rafraichir=True)
 
         sauver_donnees_json(donnees)
     else:
