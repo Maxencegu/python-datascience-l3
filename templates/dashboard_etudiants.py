@@ -113,6 +113,16 @@ GOOGLE_SHEETS = {
         "15KF71iLBwMYoLQaEQZtbepKs1qATIV87Bt8IUyMMUZs"
         "/export?format=csv"
     ),
+    "TD06 - Feuille de Présence (auto).csv": (
+        "https://docs.google.com/spreadsheets/d/"
+        "1iffM6DUVPUNm-Nl-RoH6FMy0qQmLuB6S9HWDH-QY8JE"
+        "/export?format=csv"
+    ),
+    "TD06 - Quiz (auto).csv": (
+        "https://docs.google.com/spreadsheets/d/"
+        "1o62LT5IDLtWuyNxTcnY9M8FuQFd60K6Dg4fA0pkcxi4"
+        "/export?format=csv"
+    ),
 }
 
 # ── Barème (README.md § Évaluation) ─────────────────────────────────────────
