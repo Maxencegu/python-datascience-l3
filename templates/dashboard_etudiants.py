@@ -151,6 +151,10 @@ BAREME = {td: {"presence": 10, "notebook": 20, "quiz": 10, "mp": 0} for td in TD
 BAREME["td01"]["quiz"] = 0                      # quiz à partir du TD02
 BAREME["td07"] = {"presence": 10, "notebook": 20, "quiz": 0, "mp": 30}
 
+# Cellules de vérification du mini-projet : notées sur le barème « mp »,
+# et non sur les 20 points du notebook (1 cellule = 10 pts pour le TD07).
+INDEX_MP = {"td07": ("42", "43", "44")}
+
 # Le cycle Git (branche → PR → review → merge) démarre au TD02.
 PREMIER_TD_GIT = "td02"
 # La review par un tiers est obligatoire à partir du TD03 (TD02 : configuration initiale).
@@ -602,7 +606,8 @@ def erreur_cellule(cellule):
 
 def auditer_notebook(source, td):
     """Compare les sorties enregistrées aux attendus (ou, à défaut, cherche les ❌)."""
-    resultat = {"present": False, "ok": 0, "total": 0, "details": [], "placeholders": 0}
+    resultat = {"present": False, "ok": 0, "total": 0,
+                "mp_ok": 0, "mp_total": 0, "details": [], "placeholders": 0}
     if not source:
         return resultat
     try:
@@ -616,15 +621,18 @@ def auditer_notebook(source, td):
     reference = attendus(td)
 
     if reference:
-        resultat["total"] = len(reference)
+        index_mp = set(INDEX_MP.get(td, ()))
         for index, attendu in sorted(reference.items(), key=lambda kv: int(kv[0])):
             i = int(index)
+            # Les cellules du mini-projet comptent sur le barème « mp », pas sur le notebook.
+            cle_ok, cle_total = ("mp_ok", "mp_total") if index in index_mp else ("ok", "total")
+            resultat[cle_total] += 1
             if i >= len(cellules) or cellules[i].get("cell_type") != "code":
                 resultat["details"].append(f"cellule {i} absente ou déplacée")
                 continue
             obtenu = sortie_cellule(cellules[i])
             if obtenu == attendu.strip():
-                resultat["ok"] += 1
+                resultat[cle_ok] += 1
             else:
                 apercu = (obtenu or "aucune sortie")[:60].replace("\n", " ⏎ ")
                 resultat["details"].append(f"cellule {i} : attendu {attendu.strip()[:40]!r}, obtenu {apercu!r}")
@@ -666,7 +674,8 @@ def auditer_notebook(source, td):
 # ════════════════════════════════════════════════════════════════════════════
 def audit_td02_cycle(gh, depot, proprietaire, branches):
     """TD02 : vérifie le cycle Git via API GitHub (4 points)."""
-    result = {"present": True, "ok": 0, "total": 4, "details": [], "placeholders": 0}
+    result = {"present": True, "ok": 0, "total": 4,
+              "mp_ok": 0, "mp_total": 0, "details": [], "placeholders": 0}
 
     # Check 1 : td02_enonce.ipynb présent sur main
     contenu_main = gh.api(f"repos/{depot}/contents?ref=main") or []
@@ -805,6 +814,9 @@ def notes_du_td(td, presence, quiz, audit, git, proprete=None):
     if audit["total"]:
         notes["notebook"] = round(bareme["notebook"] * audit["ok"] / audit["total"], 1)
 
+    if bareme["mp"] and audit.get("mp_total"):
+        notes["mp"] = round(bareme["mp"] * audit["mp_ok"] / audit["mp_total"], 1)
+
     if bareme["quiz"] and quiz:
         if td == "td02":
             # TD02 : 10 pts si l'URL du dépôt est renseignée
@@ -874,7 +886,8 @@ def _traiter_etudiant(email, fiche, tds, gh, presences, quiz):
 
     donnees_tds = {}
     for td in tds:
-        audit = {"present": False, "ok": 0, "total": 0, "details": [], "placeholders": 0}
+        audit = {"present": False, "ok": 0, "total": 0,
+                 "mp_ok": 0, "mp_total": 0, "details": [], "placeholders": 0}
         proprete = None
         git = None
         if depot_ok:
@@ -1173,7 +1186,7 @@ function detail(e) {
       <div class="l"><span>Notebook (${d.audit.ok}/${d.audit.total} cellules)</span><span>${n.notebook}/${b.notebook}</span></div>
       ${d.proprete && d.proprete.penalite ? `<div class="l"><span>Pénalité propreté</span><span style="color:#ff7b72">-${d.proprete.penalite} pt${d.proprete.penalite > 1 ? "s" : ""} — ${d.proprete.details.join(", ")}</span></div>` : ""}
       ${b.quiz ? `<div class="l"><span>Quiz</span><span>${n.quiz}/${b.quiz}</span></div>` : ""}
-      ${b.mp ? `<div class="l"><span>Mini-projet</span><span>${n.mp}/${b.mp}</span></div>` : ""}
+      ${b.mp ? `<div class="l"><span>Mini-projet (${d.audit.mp_ok}/${d.audit.mp_total} cellules)</span><span>${n.mp}/${b.mp}</span></div>` : ""}
       ${d.git ? `<div class="l"><span>Cycle Git</span><span>${etatGit(d.git)}</span></div>
       <div class="l"><span>PR créée / mergée</span><span>${jour(d.git.creee_le)} → ${jour(d.git.mergee_le)}</span></div>
       ${d.git.approuvee_par ? `<div class="l"><span>Approuvée par</span><span>${d.git.approuvee_par}</span></div>` : ""}
@@ -1402,6 +1415,8 @@ def resume_console(donnees):
             t = etudiant["tds"][td]
             cel = (f"{t['audit']['ok']}/{t['audit']['total']}"
                    if t["audit"]["total"] else "—")
+            if t["audit"].get("mp_total"):
+                cel += f" mp:{t['audit']['mp_ok']}/{t['audit']['mp_total']}"
             note = f"{fmt_note(t['note']['obtenu'])}/{t['note']['max']}"
             items.append(f"{td.upper()}  cel:{cel}  note:{note}")
 

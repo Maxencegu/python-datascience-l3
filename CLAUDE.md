@@ -313,7 +313,7 @@ templates/tests/
   td04_expected.json    ← outputs attendus TD04 ✅
   td05_expected.json    ← outputs attendus TD05 ✅
   td06_expected.json    ← outputs attendus TD06 ✅
-  td07_expected.json    ← outputs attendus TD07 partie 1 uniquement (MP exclu) ✅
+  td07_expected.json    ← outputs attendus TD07 : partie 1 + mini-projet 1 ✅
   td08_expected.json    ← outputs attendus TD08 ✅
 templates/dashboard_etudiants.py  ← script enseignant : tableau de bord HTML de la promo
 ```

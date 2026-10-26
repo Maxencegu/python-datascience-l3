@@ -10,5 +10,8 @@
   "30": "<Figure size 640x480 with 1 Axes>",
   "32": "<Figure size 640x480 with 1 Axes>",
   "35": "✅ Bonne réponse (4) : Correct! 80 % est en effet une très bonne valeur estimée.",
-  "36": "0.784"
+  "36": "0.784",
+  "42": "Mini-projet 1 — histogramme :\n\n  ✅ Histogramme tracé",
+  "43": "Mini-projet 1 — duration :\n\n  ✅ duration : durée correcte",
+  "44": "Mini-projet 1 — short_movie_count :\n\n  ✅ short_movie_count : nombre correct"
 }
