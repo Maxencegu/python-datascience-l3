@@ -24,7 +24,13 @@ Données d'entrée — toutes dans réponses/ (dossier ignoré par git, jamais p
     etudiants.csv                                cache e-mail → pseudo GitHub,
                                                  complété automatiquement depuis
                                                  l'URL du dépôt saisie au quiz,
-                                                 éditable à la main
+                                                 reconstruit à chaque exécution
+    corrections_manuelles.csv                    saisies de l'enseignant, jamais
+                                                 écrasées : mêmes informations que
+                                                 le quiz TD02 (dépôt, nom, numéro,
+                                                 classe) pour les étudiants absents
+                                                 ce jour-là, plus les adresses
+                                                 secondaires à fusionner
 
 Sortie : réponses/dashboard.html (contient des données nominatives — ne jamais committer)
 
@@ -53,6 +59,7 @@ REPONSES = os.path.join(RACINE, "réponses")
 TESTS = os.path.join(RACINE, "templates", "tests")
 CACHE = os.path.join(REPONSES, ".cache_github.json")
 MAPPING = os.path.join(REPONSES, "etudiants.csv")
+CORRECTIONS = os.path.join(REPONSES, "corrections_manuelles.csv")
 SORTIE = os.path.join(REPONSES, "dashboard.html")
 DONNEES_JSON = os.path.join(REPONSES, "donnees.json")
 
@@ -375,6 +382,87 @@ def sauver_mapping(annuaire):
             redacteur.writerow(annuaire[email])
 
 
+CHAMPS_CORRECTIONS = ["email", "nom", "numero", "classe", "url_depot", "alias",
+                      "commentaire"]
+
+
+def charger_corrections():
+    """Saisies manuelles de réponses/corrections_manuelles.csv.
+
+    Une ligne par étudiant, avec les mêmes informations que le quiz TD02
+    (dépôt, nom, numéro, classe) pour ceux qui étaient absents ce jour-là.
+    La colonne alias liste les adresses secondaires à fusionner sur l'adresse
+    principale, séparées par des points-virgules ou des virgules.
+    Ce fichier n'est jamais réécrit par le script : il survit à --reload.
+    """
+    corrections = []
+    if not os.path.exists(CORRECTIONS):
+        return corrections
+    for ligne in lire_tableur(CORRECTIONS):
+        email = (ligne.get("email") or "").strip().lower()
+        if not email:
+            continue
+        alias = [a.strip().lower()
+                 for a in re.split(r"[;,]", ligne.get("alias") or "")
+                 if a.strip() and a.strip().lower() != email]
+        corrections.append({
+            "email": email,
+            "nom": (ligne.get("nom") or "").strip(),
+            "numero": (ligne.get("numero") or "").strip(),
+            "classe": (ligne.get("classe") or "").strip(),
+            "username": username_depuis_url(ligne.get("url_depot") or ""),
+            "alias": alias,
+        })
+    return corrections
+
+
+def appliquer_corrections(annuaire, presences, quiz):
+    """Fusionne les alias sur l'adresse principale et impose les champs saisis.
+
+    Les trois dictionnaires sont modifiés sur place : une présence ou un quiz
+    envoyé depuis une adresse secondaire est reporté sur l'adresse principale,
+    puis la fiche de l'alias disparaît de l'annuaire.
+    """
+    corrections = charger_corrections()
+    if not corrections:
+        return annuaire
+
+    fusions = 0
+    for correction in corrections:
+        email = correction["email"]
+        fiche = annuaire.setdefault(email, {c: "" for c in CHAMPS_MAPPING})
+        fiche["email"] = email
+
+        for alias in correction["alias"]:
+            doublon = annuaire.pop(alias, None)
+            if doublon:
+                fusions += 1
+                for champ in CHAMPS_MAPPING:
+                    if champ != "email" and not fiche.get(champ):
+                        fiche[champ] = doublon.get(champ, "")
+            for td_presences in presences.values():
+                if alias in td_presences:
+                    horodatage = td_presences.pop(alias)
+                    td_presences.setdefault(email, horodatage)
+            for td_quiz in quiz.values():
+                if alias in td_quiz:
+                    reponse = td_quiz.pop(alias)
+                    existant = td_quiz.get(email)
+                    if existant is None:
+                        td_quiz[email] = reponse
+                    elif existant.get("obtenu") is None and reponse.get("obtenu") is not None:
+                        td_quiz[email] = reponse
+
+        # Les valeurs saisies à la main font autorité sur celles des exports.
+        for champ in ("nom", "numero", "classe", "username"):
+            if correction[champ]:
+                fiche[champ] = correction[champ]
+
+    print(f"  ✍️  {len(corrections)} correction(s) manuelle(s) appliquée(s)"
+          f" ({fusions} fiche(s) en doublon fusionnée(s))")
+    return annuaire
+
+
 def construire_annuaire(presences, quiz, reconstruire=False):
     """Fusionne les feuilles de présence et les URL saisies au quiz.
 
@@ -410,6 +498,7 @@ def construire_annuaire(presences, quiz, reconstruire=False):
             if classe and not fiche.get("classe"):
                 fiche["classe"] = classe
 
+    appliquer_corrections(annuaire, presences, quiz)
     sauver_mapping(annuaire)
     return annuaire
 
