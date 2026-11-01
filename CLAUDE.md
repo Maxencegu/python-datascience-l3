@@ -405,3 +405,85 @@ cellules et contrôlée via l'API GitHub.
 - 12 — Pull Requests (créer, base/compare, reviewer, workflow 6 étapes)
 - 13 — Examiner une Pull Request (Files changed, 3 options, merge, delete branch)
 - 14 — Workflow complet TD03→TD10 (4 phases, 10 étapes, feuille de présence + quiz)
+
+## Annonce Moodle (coursUPJV) — mise en ligne d'un TD
+
+Une annonce est publiée sur coursUPJV à chaque mise en ligne d'un TD. C'est du
+**HTML à coller directement dans l'éditeur Moodle** : styles tous en ligne
+(`style="…"`), aucune feuille de style, aucun `<script>`, aucune classe CSS —
+Moodle filtre le reste. Ne jamais produire cette annonce sous forme d'Artifact.
+
+**Titre de l'annonce** (champ Moodle séparé du corps) :
+
+```
+TDXX disponible — Nom du TD
+```
+
+**Corps de l'annonce — modèle de référence** (ici le TD05 ; remplacer les six
+valeurs listées sous le modèle) :
+
+```html
+<div style="background:#0e2847;padding:1.6rem 2rem;">
+
+    <div style="padding:1.6rem 2rem;">
+        <p style="font-size:0.7rem;font-weight:600;letter-spacing:0.18em;text-transform:uppercase;color:rgba(255,255,255,0.55);margin:0 0 0.5rem;">Python &amp; Data Science · L3 Économie · UPJV</p>
+        <p style="font-size:1.5rem;font-weight:700;color:#fff;margin:0 0 0.9rem;line-height:1.25;">TD05 en ligne et vidéo à visionner avant la séance</p>
+        <div>
+            <span style="font-size:0.7rem;font-weight:500;padding:0.2rem 0.6rem;background:rgba(255,255,255,0.12);color:rgba(255,255,255,0.75);border:1px solid rgba(255,255,255,0.15);">TD05</span>
+            <span style="font-size:0.7rem;font-weight:500;padding:0.2rem 0.6rem;background:rgba(255,255,255,0.12);color:rgba(255,255,255,0.75);border:1px solid rgba(255,255,255,0.15);">Matplotlib</span>
+            <span style="font-size:0.7rem;font-weight:500;padding:0.2rem 0.6rem;background:rgba(255,255,255,0.12);color:rgba(255,255,255,0.75);border:1px solid rgba(255,255,255,0.15);">Pandas</span>
+            <span style="font-size:0.7rem;font-weight:500;padding:0.2rem 0.6rem;background:rgba(255,255,255,0.12);color:rgba(255,255,255,0.75);border:1px solid rgba(255,255,255,0.15);">Vidéo</span>
+            <span style="font-size:0.7rem;font-weight:500;padding:0.2rem 0.6rem;background:rgba(255,255,255,0.12);color:rgba(255,255,255,0.75);border:1px solid rgba(255,255,255,0.15);">Novembre 2026</span>
+        </div>
+    </div>
+
+    <div style="background:#fff;padding:1.6rem 2rem 1.8rem;">
+        <p style="color:#475569;font-size:0.9rem;line-height:1.7;margin:0 0 1.4rem;">Le <strong>TD05 — Matplotlib, dictionnaires et Pandas</strong> est désormais accessible sur <strong>Google Colab</strong>. Pensez à visionner la <strong>vidéo explicative chez vous, avant la séance en classe</strong>, pour arriver prêt à pratiquer directement.</p>
+
+        <div style="margin-bottom:1.3rem;">
+
+            <div style="background:#f0fdf4;border:1px solid rgba(34,197,94,0.25);padding:1rem 1.1rem;">
+                <p style="font-size:0.68rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#16a34a;margin:0 0 0.3rem;">TD 05</p>
+                <p style="font-weight:700;font-size:0.86rem;color:#0f172a;line-height:1.3;margin:0 0 0.4rem;">Matplotlib, dictionnaires et Pandas</p>
+                <p style="font-size:0.77rem;color:#64748b;line-height:1.5;margin:0 0 0.6rem;">Tracé de courbes, nuages de points et histogrammes avec Matplotlib, dictionnaires Python, et premiers DataFrames Pandas.</p>
+                <a href="https://colab.research.google.com/github/Maxencegu/python-datascience-l3/blob/main/assignments/td05_matplotlib_dictionnaires_et_pandas/td05_enonce.ipynb" target="_blank" style="font-size:0.78rem;font-weight:700;padding:0.4rem 0.85rem;text-decoration:none;color:#fff;background:#16a34a;" rel="noreferrer noopener">▶ Ouvrir dans Colab</a>
+                <a href="https://youtu.be/yhqw1YsLkrY" target="_blank" style="font-size:0.78rem;font-weight:700;padding:0.4rem 0.85rem;text-decoration:none;color:#16a34a;background:#fff;border:1px solid rgba(34,197,94,0.4);" rel="noreferrer noopener">🎬 Vidéo — à voir avant la séance</a>
+            </div>
+
+        </div>
+
+        <div style="background:#fffbeb;border:1px solid rgba(245,158,11,0.25);padding:0.8rem 1rem;font-size:0.8rem;color:#64748b;line-height:1.55;">
+            💡 <strong style="color:#0f172a;">Première utilisation de Colab ?</strong> Connectez-vous avec votre compte Google, puis cliquez sur <em>« Exécuter quand même »</em> si un avertissement apparaît. Vos modifications sont sauvegardées automatiquement dans votre Google Drive.
+        </div>
+    </div>
+
+    <div style="border-top:1px solid #e2e8f0;padding:0.8rem 2rem;font-size:0.73rem;color:#94a3b8;">
+        <span>github.com/Maxencegu/python-datascience-l3</span>
+        <span>M. Guéry — UPJV Amiens</span>
+    </div>
+
+</div>
+```
+
+**Les six valeurs à changer d'un TD à l'autre :**
+
+| Valeur | Où | Exemple TD05 |
+|--------|-----|--------------|
+| Numéro du TD | titre Moodle, bandeau, chip, étiquette `TD 05`, phrase d'intro | `TD05` / `TD 05` |
+| Nom du TD | titre Moodle, phrase d'intro, titre de la carte | `Matplotlib, dictionnaires et Pandas` |
+| Chips thématiques | 1 à 3 chips entre le chip `TDXX` et le chip `Vidéo` | `Matplotlib`, `Pandas` |
+| Mois et année | dernier chip | `Novembre 2026` |
+| Résumé du contenu | paragraphe gris de la carte, une phrase | voir modèle |
+| Lien Colab + ID vidéo | les deux `<a href>` de la carte | `td05_matplotlib_dictionnaires_et_pandas` / `yhqw1YsLkrY` |
+
+Le lien Colab suit toujours le dossier du TD dans `assignments/`. L'ID de la vidéo
+se lit dans le notebook d'énoncé : chercher `VIDEO_ID` dans `tdXX_enonce.ipynb`.
+
+**Palette de l'annonce** (indépendante du thème sombre des infographies) :
+bandeau `#0e2847`, corps `#fff`, texte courant `#475569`, titres `#0f172a`,
+texte secondaire `#64748b`, carte verte `#f0fdf4` / bordure `rgba(34,197,94,0.25)`
+/ accent `#16a34a`, encart conseil `#fffbeb` / bordure `rgba(245,158,11,0.25)`,
+pied de page `#94a3b8` sur bordure `#e2e8f0`.
+
+**Variante sans vidéo** : supprimer le chip `Vidéo`, le second `<a href>` de la
+carte, et la phrase sur la vidéo dans le paragraphe d'intro.
