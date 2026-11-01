@@ -686,7 +686,7 @@ def audit_td02_cycle(gh, depot, proprietaire, branches):
         result["details"].append("td02_enonce.ipynb absent de main")
 
     # Check 2 : Pull Request dev_td02 → main créée
-    prs = gh.api(f"repos/{depot}/pulls?state=all&base=main&head={proprietaire}:dev_td02") or []
+    prs = pulls_de_branche(gh, depot, "dev_td02")
     pr = next((p for p in prs if p.get("merged_at")), prs[0] if prs else None)
     if pr:
         result["ok"] += 1
@@ -747,17 +747,33 @@ def proprete_depot(gh, depot, branches, td):
 # ════════════════════════════════════════════════════════════════════════════
 #  Cycle Git d'un TD
 # ════════════════════════════════════════════════════════════════════════════
+def pulls_de_branche(gh, depot, branche):
+    """PR d'une branche vers main, quelle que soit la casse du nom de branche.
+
+    Le filtre « head » de l'API GitHub est sensible à la casse : une PR ouverte
+    depuis « dev_TD04 » reste invisible si on demande « dev_td04 ». Le workflow
+    GitHub Actions, lui, accepte déjà dev_*, Dev_* et DEV_*. On récupère donc
+    toutes les PR vers main (une seule requête, mise en cache et réutilisée pour
+    chaque TD) et on filtre nous-mêmes sur le nom de branche en minuscules.
+    """
+    prs = gh.api(f"repos/{depot}/pulls?state=all&base=main&per_page=100") or []
+    cible = branche.lower()
+    return [p for p in prs
+            if ((p.get("head") or {}).get("ref") or "").lower() == cible]
+
+
 def cycle_git(gh, depot, proprietaire, td, branches):
     """Branche, Pull Request, review par un tiers, merge, nettoyage, Actions."""
     branche = f"dev_{td}"
+    branches_minuscules = {b.lower() for b in branches}
     etat = {
-        "branche_existe": branche in branches,
+        "branche_existe": branche in branches_minuscules,
         "pr": False, "pr_numero": None, "creee_le": None, "mergee_le": None,
         "approuvee_par": None, "auto_approuvee": False, "bypass": False,
         "branche_supprimee": False, "checks": None, "url": None,
         "review_requise": td >= PREMIER_TD_REVIEW,
     }
-    prs = gh.api(f"repos/{depot}/pulls?state=all&base=main&head={proprietaire}:{branche}") or []
+    prs = pulls_de_branche(gh, depot, branche)
     if not prs:
         etat["branche_supprimee"] = not etat["branche_existe"] and False
         return etat
