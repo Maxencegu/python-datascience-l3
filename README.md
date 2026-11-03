@@ -8,7 +8,7 @@
 
 </p>
 
-# 🐍 Python & Data Science
+# 🐍 Python & Data Science 2
 
 <p align="center">
 
