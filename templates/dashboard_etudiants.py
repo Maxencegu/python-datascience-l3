@@ -604,6 +604,31 @@ def erreur_cellule(cellule):
     return None
 
 
+def _apercu(texte, defaut="", limite=200):
+    """Rend une sortie lisible sur une ligne, en signalant toute troncature.
+
+    Attendu et obtenu passent par la même fonction : sans cela, un attendu
+    tronqué en silence se lit comme la sortie complète (un étudiant a cru
+    devoir s'arrêter à « room 3 » parce que la suite avait été coupée).
+    """
+    texte = (texte or defaut).replace("\n", " ⏎ ")
+    return texte if len(texte) <= limite else texte[:limite] + " […]"
+
+
+def _note_espaces(attendu, obtenu):
+    """Signale les écarts invisibles à l'œil : espaces, tabulations, casse."""
+    if not obtenu:
+        return ""
+    sans_espaces = lambda t: "".join(t.split())
+    if sans_espaces(attendu) == sans_espaces(obtenu):
+        return "  (seuls les espaces diffèrent)"
+    if attendu.lower() == obtenu.lower():
+        return "  (seule la casse diffère)"
+    if sans_espaces(attendu.lower()) == sans_espaces(obtenu.lower()):
+        return "  (seuls les espaces et la casse diffèrent)"
+    return ""
+
+
 def auditer_notebook(source, td):
     """Compare les sorties enregistrées aux attendus (ou, à défaut, cherche les ❌)."""
     resultat = {"present": False, "ok": 0, "total": 0,
@@ -634,8 +659,11 @@ def auditer_notebook(source, td):
             if obtenu == attendu.strip():
                 resultat[cle_ok] += 1
             else:
-                apercu = (obtenu or "aucune sortie")[:60].replace("\n", " ⏎ ")
-                resultat["details"].append(f"cellule {i} : attendu {attendu.strip()[:40]!r}, obtenu {apercu!r}")
+                resultat["details"].append(
+                    f"cellule {i} : attendu {_apercu(attendu.strip())!r}, "
+                    f"obtenu {_apercu(obtenu, defaut='aucune sortie')!r}"
+                    + _note_espaces(attendu.strip(), obtenu)
+                )
     else:
         # TD sans fichier d'attendus (TD01, TD02) : on lit les cellules « ✅ Vérification ».
         for i, cellule in enumerate(cellules):
