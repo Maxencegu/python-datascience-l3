@@ -77,7 +77,6 @@ Les travaux pratiques sont réalisés avec **Google Colab**, les projets sont ve
 | TD6 | ✅ |
 | TD7 — Étude de cas + Mini-projet 1 | ✅ |
 | TD8 | ✅ |
-| Examen final | ✅ (publié le jour J) |
 | Documentation | ⏳ |
 | Jeux de données | ✅ |
 | FAQ | ⏳ |
@@ -167,7 +166,7 @@ Aucune installation de Python n'est nécessaire.
 Le cours est composé de :
 
 - **8 Travaux Dirigés** dont 1 séance dédiée à une étude de cas + mini-projet en binôme (TD7)
-- **1 Examen final individuel**
+- **1 séance de finalisation** (rattrapage des TD et des mini-projets)
 - **1 Feuille de présence au début de chaque séance**
 - **1 Quiz à la fin de chaque séance** (sauf TD7)
 
@@ -192,7 +191,7 @@ Chaque séance dure **2 heures** (9 séances × 2h = 18h).
 | TD6 | Logique, flux de contrôle, filtrage et boucles |
 | TD7 | **Étude de cas + Mini-projet 1 en binôme** |
 | TD8 | Pandas : agrégation et transformation des données |
-| — | **Examen final individuel** |
+| — | **Séance de finalisation et rattrapage** |
 
 ---
 
@@ -251,17 +250,23 @@ Chaque séance suit le même workflow.
 
 > **TD7 — barème spécifique :** 10 pts présence + 20 pts étude de cas (en séance) + 30 pts mini-projet 1 (rendu à la maison) = **60 pts**. Pas de quiz.
 
-> **Examen final :** 330 points, durée 2 heures. Le contrôle continu représente 330 points au total — même poids que l'examen final.
+> **Pas d'examen final : l'évaluation est à 100 % en contrôle continu.**
 
-| Exercice | Thème | Points |
-|----------|-------|--------|
-| Ex 1 | Fonctions Python | 30 pts |
-| Ex 2 | NumPy | 50 pts |
-| Ex 3 | Matplotlib | 50 pts |
-| Ex 4 | Pandas — sélection & filtrage | 60 pts |
-| Ex 5 | Nouvelles colonnes & statistiques | 50 pts |
-| Ex 6 | Statistiques groupées (.groupby) | 50 pts |
-| Ex 7 | Tableau croisé dynamique (.pivot_table) | 40 pts |
+**Total : 330 points** sur les 8 TD.
+
+| TD | Présence | Notebook | Quiz | Mini-projet | Total |
+|----|:--------:|:--------:|:----:|:-----------:|:-----:|
+| TD1 | 10 | 20 | — | — | **30** |
+| TD2 | 10 | 20 | 10 | — | **40** |
+| TD3 | 10 | 20 | 10 | — | **40** |
+| TD4 | 10 | 20 | 10 | — | **40** |
+| TD5 | 10 | 20 | 10 | — | **40** |
+| TD6 | 10 | 20 | 10 | — | **40** |
+| TD7 | 10 | 20 | — | 30 | **60** |
+| TD8 | 10 | 20 | 10 | — | **40** |
+| | | | | | **330** |
+
+Les points du notebook sont proportionnels au nombre de cellules correctes.
 
 ---
 
@@ -300,7 +305,6 @@ python-datascience
 ├── assignments/        ← notebooks de TD (énoncés + corrections gitignorées)
 ├── datasets/           ← jeux de données partagés entre TD
 ├── templates/          ← workflow GitHub Actions et scripts enseignant
-├── binder/             ← configuration Binder pour l'examen final
 ├── projects/           ← consignes mini-projets
 ├── resources/          ← fiches mémo
 ├── docs/               ← guides techniques (à venir)

@@ -253,7 +253,8 @@ Ne jamais ajouter dans ce dépôt :
 
 ## Programme (année commune L3/M1 2026-2027)
 
-**8 TD de contenu + 1 examen final = 9 séances × 2h = 18h.**
+**8 TD de contenu + 1 séance de finalisation = 9 séances × 2h = 18h.**
+**Évaluation à 100 % en contrôle continu : 330 points sur les 8 TD, pas d'examen final.**
 Le TD07 intègre : (1) l'étude de cas "statistiques pirates" (nombres aléatoires, marche aléatoire, simulation, Matplotlib) puis (2) le mini-projet 1 en binôme démarré en séance et **terminé à la maison**. **Pas de quiz de fin de séance pour le TD07** (séance trop chargée).
 
 **Barème TD07 :** 10 pts présence + 20 pts étude de cas (en séance) + 30 pts mini-projet 1 (rendu à la maison) = **60 pts**.
@@ -268,7 +269,7 @@ Le TD07 intègre : (1) l'étude de cas "statistiques pirates" (nombres aléatoir
 | TD6 | Logique, flux de contrôle, filtrage et boucles | `td06_Logique_flux_de_controle_filtrage_et_boucles` |
 | TD7_MP1 | Étude de cas "statistiques pirates" + Mini-projet 1 en binôme | `td07_mp1_etude_de_cas_et_mini_projet` |
 | TD8 | Pandas : agrégation et transformation | `td08_pandas_agregation_et_transformation` |
-| Examen | Examen final individuel | `assignments/examen_final/` (gitignorée jusqu'au jour J) |
+| Finalisation | Rattrapage des TD en retard et des mini-projets | — |
 
 **Workflow d'une séance (à ne pas modifier sans accord) :**
 GitHub → Correction TD précédent (à partir TD2) → Google Forms présence (10 pts) → Colab → Exercices (20 pts) → Sauvegarde GitHub sur branche `dev_tdXX` (à partir TD2) → GitHub Actions sur branche (à partir TD3) → Pull Request + review collègue → Merge main (à partir TD3) → Quiz fin de séance (10 pts, à partir TD3) incluant le renseignement de l'URL du dépôt étudiant (pour automatiser la correction)
@@ -324,11 +325,17 @@ templates/dashboard_etudiants.py  ← script enseignant : tableau de bord HTML d
 tableau de bord HTML autonome.
 
 ```
-python templates/dashboard_etudiants.py            # tous les TD
-python templates/dashboard_etudiants.py --td td03  # un seul TD
-python templates/dashboard_etudiants.py --refresh  # ignore le cache GitHub (TTL 15 min)
+python templates/dashboard_etudiants.py            # relit donnees.json, aucun appel GitHub
+python templates/dashboard_etudiants.py --td td03  # restreint l'affichage à un TD
+python templates/dashboard_etudiants.py --reload   # table rase : recharge tout depuis GitHub
+python templates/dashboard_etudiants.py --reload --num_etudiant USERNAME  # recharge un seul étudiant
 python templates/dashboard_etudiants.py --offline  # aucune requête réseau
 ```
+
+`--reload` sans `--num_etudiant` supprime `donnees.json`, `etudiants.csv`
+(sauvegardé en `etudiants.csv.avant_reload`) et le cache GitHub, puis archive
+les exports périmés. **Ne jamais le combiner avec `--td`** : le `donnees.json`
+reconstruit ne contiendrait plus que ce TD.
 
 Prérequis : `gh auth login`. `openpyxl` seulement si les exports sont en `.xlsx`.
 
@@ -372,7 +379,7 @@ cellules et contrôlée via l'API GitHub.
 - Le runner est téléchargé depuis le dépôt du cours au runtime → valeurs cachées des étudiants
 - Le workflow se déclenche sur tout push vers une branche `dev_*` (aussi `Dev_*`, `DEV_*`) et sur toute PR vers `main`
 - Le nom du TD est déduit automatiquement du nom de branche : `dev_td03` → `td03` (insensible à la casse ; une branche `dev_*` mal nommée, ex. `dev_td3`, fait échouer le job)
-- Tests ignorés (job vert) : branche qui ne commence pas par `dev_` (ex. PR `examen_final`), TD sans `tdXX_expected.json` (TD01, TD02, TD non publié), ou push sans aucun notebook du TD, à quelque profondeur que ce soit (branche tout juste créée). Un notebook du TD mal nommé ou mal placé (`Copie de td03_enonce.ipynb`, `TD3.ipynb`, `TD03/td03_enonce.ipynb`) fait échouer le job avec le nom attendu, sur push comme sur PR
+- Tests ignorés (job vert) : branche qui ne commence pas par `dev_` (ex. PR depuis une branche `patch-1` créée via l'interface GitHub), TD sans `tdXX_expected.json` (TD01, TD02, TD non publié), ou push sans aucun notebook du TD, à quelque profondeur que ce soit (branche tout juste créée). Un notebook du TD mal nommé ou mal placé (`Copie de td03_enonce.ipynb`, `TD3.ipynb`, `TD03/td03_enonce.ipynb`) fait échouer le job avec le nom attendu, sur push comme sur PR
 
 ### Workflow côté enseignant (par TD)
 
