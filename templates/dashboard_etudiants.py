@@ -130,6 +130,12 @@ GOOGLE_SHEETS = {
         "1o62LT5IDLtWuyNxTcnY9M8FuQFd60K6Dg4fA0pkcxi4"
         "/export?format=csv"
     ),
+    # Pas de quiz au TD07 : seance trop chargee (etude de cas + mini-projet 1).
+    "TD07 - Feuille de Présence (auto).csv": (
+        "https://docs.google.com/spreadsheets/d/"
+        "1XmhTGAhY28gViCVZHziOsAn2DT2kvkwu4OSraOgBA0U"
+        "/export?format=csv"
+    ),
 }
 
 # ── Barème (README.md § Évaluation) ─────────────────────────────────────────
