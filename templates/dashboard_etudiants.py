@@ -75,11 +75,6 @@ CLASSE_FILTRE = "L3"
 #   "TD02 - Quiz (auto).csv"                → quiz TD02
 #   "TD03 - Feuille de Présence (auto).csv" → présence TD03
 GOOGLE_SHEETS = {
-    "TD02 - Quiz (auto).csv": (
-        "https://docs.google.com/spreadsheets/d/"
-        "1xhPMQG_Y0i2Rnkr7ufYW828zr9R_q8-usbLwj4Ghkq0"
-        "/export?format=csv&gid=1187797802"
-    ),
     "TD01 - Feuille de Présence (auto).csv": (
         "https://docs.google.com/spreadsheets/d/"
         "1LuxotNcrkV6ailed-wrcWM1QXZ4iWS6lZ5RzUYil4wk"
@@ -89,6 +84,11 @@ GOOGLE_SHEETS = {
         "https://docs.google.com/spreadsheets/d/"
         "1SmScpXdePQA2nFOt_M4C2xJ9bqCcfqgbMPOBU50q0UE"
         "/export?format=csv&gid=274178632"
+    ),
+    "TD02 - Quiz (auto).csv": (
+        "https://docs.google.com/spreadsheets/d/"
+        "1xhPMQG_Y0i2Rnkr7ufYW828zr9R_q8-usbLwj4Ghkq0"
+        "/export?format=csv&gid=1187797802"
     ),
     "TD03 - Feuille de Présence (auto).csv": (
         "https://docs.google.com/spreadsheets/d/"
