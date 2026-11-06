@@ -719,7 +719,7 @@ def audit_td02_cycle(gh, depot, proprietaire, branches):
     else:
         result["details"].append("td02_enonce.ipynb absent de main")
 
-    # Check 2 : Pull Request dev_td02 → main créée
+    # Check 2 : Pull Request dev_td02 (ou dev-td02) → main créée
     prs = pulls_de_branche(gh, depot, "dev_td02")
     pr = next((p for p in prs if p.get("merged_at")), prs[0] if prs else None)
     if pr:
@@ -733,8 +733,9 @@ def audit_td02_cycle(gh, depot, proprietaire, branches):
     elif pr:
         result["details"].append("Pull Request non mergée")
 
-    # Check 4 : branche dev_td02 supprimée
-    if "dev_td02" not in branches:
+    # Check 4 : branche dev_td02 supprimée (accepte tiret et soulignement)
+    branches_minuscules = {b.lower() for b in branches}
+    if "dev_td02" not in branches_minuscules and "dev-td02" not in branches_minuscules:
         result["ok"] += 1
     else:
         result["details"].append("Branche dev_td02 non supprimée")
@@ -754,7 +755,7 @@ def proprete_depot(gh, depot, branches, td):
     TD03+ : seule main est autorisée.
     """
     if td == "td02":
-        branches_ok = {"main", "dev_td03"}
+        branches_ok = {"main", "dev_td03", "dev-td03"}
     else:
         branches_ok = {"main"}
 
@@ -789,19 +790,25 @@ def pulls_de_branche(gh, depot, branche):
     GitHub Actions, lui, accepte déjà dev_*, Dev_* et DEV_*. On récupère donc
     toutes les PR vers main (une seule requête, mise en cache et réutilisée pour
     chaque TD) et on filtre nous-mêmes sur le nom de branche en minuscules.
+    Accepte aussi le tiret comme séparateur (dev-tdXX = dev_tdXX).
     """
     prs = gh.api(f"repos/{depot}/pulls?state=all&base=main&per_page=100") or []
     cible = branche.lower()
+    cibles = {cible, cible.replace("dev_td", "dev-td"), cible.replace("dev-td", "dev_td")}
     return [p for p in prs
-            if ((p.get("head") or {}).get("ref") or "").lower() == cible]
+            if ((p.get("head") or {}).get("ref") or "").lower() in cibles]
 
 
 def cycle_git(gh, depot, proprietaire, td, branches):
     """Branche, Pull Request, review par un tiers, merge, nettoyage, Actions."""
-    branche = f"dev_{td}"
     branches_minuscules = {b.lower() for b in branches}
+    # Accepte dev_tdXX (convention) et dev-tdXX (tiret, tolérée)
+    branche_souligne = f"dev_{td}"
+    branche_tiret = f"dev-{td}"
+    branche_existe = branche_souligne in branches_minuscules or branche_tiret in branches_minuscules
+    branche = branche_tiret if branche_tiret in branches_minuscules else branche_souligne
     etat = {
-        "branche_existe": branche in branches_minuscules,
+        "branche_existe": branche_existe,
         "pr": False, "pr_numero": None, "creee_le": None, "mergee_le": None,
         "approuvee_par": None, "auto_approuvee": False, "bypass": False,
         "branche_supprimee": False, "checks": None, "url": None,
