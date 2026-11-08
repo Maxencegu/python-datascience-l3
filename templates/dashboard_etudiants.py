@@ -779,6 +779,31 @@ def proprete_depot(gh, depot, branches, td):
     return result
 
 
+def audit_readme(gh, depot, tds_presents):
+    """Vérifie que le README mentionne chaque TD présent sur main.
+
+    tds_presents : liste de tdXX (ex: ['td03', 'td04']) dont le notebook est sur main.
+    Retourne {"penalite": 0 ou 5, "details": [...], "tds_manquants": [...]}.
+    """
+    if not tds_presents:
+        return {"penalite": 0, "details": [], "tds_manquants": []}
+
+    contenu = gh.fichier(depot, "README.md")
+    if contenu is None:
+        return {"penalite": 5, "details": ["README.md absent"], "tds_manquants": list(tds_presents)}
+
+    contenu_lower = contenu.lower()
+    manquants = [td for td in tds_presents if td.replace("_", "") not in contenu_lower
+                 and td not in contenu_lower]
+    if manquants:
+        return {
+            "penalite": 5,
+            "details": [f"README ne mentionne pas : {', '.join(manquants)}"],
+            "tds_manquants": manquants,
+        }
+    return {"penalite": 0, "details": [], "tds_manquants": []}
+
+
 # ════════════════════════════════════════════════════════════════════════════
 #  Cycle Git d'un TD
 # ════════════════════════════════════════════════════════════════════════════
@@ -972,7 +997,14 @@ def _traiter_etudiant(email, fiche, tds, gh, presences, quiz):
             "note": note,
         }
 
-    total = round(sum(t["note"]["obtenu"] for t in donnees_tds.values()), 1)
+    # Vérification README : chaque TD présent sur main doit être mentionné
+    tds_presents = [td for td, d in donnees_tds.items() if d["audit"].get("present")]
+    readme = {"penalite": 0, "details": [], "tds_manquants": []}
+    if depot_ok and tds_presents:
+        readme = audit_readme(gh, depot, tds_presents)
+
+    total_brut = round(sum(t["note"]["obtenu"] for t in donnees_tds.values()), 1)
+    total = max(0.0, round(total_brut - readme["penalite"], 1))
     maximum = sum(t["note"]["max"] for t in donnees_tds.values())
     return {
         "nom": fiche.get("nom") or email,
@@ -983,6 +1015,7 @@ def _traiter_etudiant(email, fiche, tds, gh, presences, quiz):
         "depot": f"https://github.com/{depot}" if depot else "",
         "depot_ok": depot_ok,
         "tds": donnees_tds,
+        "readme": readme,
         "total": total,
         "max": maximum,
         "pourcentage": round(100 * total / maximum, 1) if maximum else 0,
@@ -1195,6 +1228,8 @@ function problemes(e, tds, avecDetails) {
     if (d.proprete && d.proprete.penalite)
       liste.push(`${td} : -${d.proprete.penalite} propreté (${d.proprete.details.join(", ")})`);
   }
+  if (e.readme && e.readme.penalite)
+    liste.push(`-${e.readme.penalite} README (${e.readme.details.join(", ")})`);
   return liste;
 }
 
@@ -1252,7 +1287,11 @@ function detail(e) {
       ${pbs ? `<div class="pb">${pbs}</div>` : ""}
     </div>`;
   }).join("");
-  return `<tr class="detail"><td colspan="9"><div class="grille">${carteAlerte}${cartes}</div></td></tr>`;
+  const carteReadme = (e.readme && e.readme.penalite) ? `<div class="fiche" style="border-top:3px solid #d29922;">
+    <h4>📄 README</h4>
+    <div class="l"><span>Pénalité README</span><span style="color:#ff7b72">-${e.readme.penalite} pts — ${e.readme.details.join(", ")}</span></div>
+  </div>` : "";
+  return `<tr class="detail"><td colspan="9"><div class="grille">${carteAlerte}${cartes}${carteReadme}</div></td></tr>`;
 }
 
 function rendre() {
