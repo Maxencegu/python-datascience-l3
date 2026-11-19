@@ -146,10 +146,21 @@ GOOGLE_SHEETS = {
         "17ipj5qfy5OFS7wTFltUW1wzT7ZPjupFMOj6X81KDYTQ"
         "/export?format=csv"
     ),
+    # TD09 : séance de finalisation — présence + quiz bilan uniquement (pas de notebook).
+    "TD09 - Feuille de Présence (auto).csv": (
+        "https://docs.google.com/spreadsheets/d/"
+        "1M32bxsXyAdBNO0XXcUkZBzgkgLhpCpS1t0-yQ6a4LFo"
+        "/export?format=csv"
+    ),
+    "TD09 - Quiz (auto).csv": (
+        "https://docs.google.com/spreadsheets/d/"
+        "1C-_HgyrGMZOqVZ593j6sIBmxVFAHyN3uaDHlDssHqxw"
+        "/export?format=csv"
+    ),
 }
 
 # ── Barème (README.md § Évaluation) ─────────────────────────────────────────
-TDS = ["td01", "td02", "td03", "td04", "td05", "td06", "td07", "td08"]
+TDS = ["td01", "td02", "td03", "td04", "td05", "td06", "td07", "td08", "td09"]
 
 LIBELLES = {
     "td01": "Introduction à Git",
@@ -160,12 +171,14 @@ LIBELLES = {
     "td06": "Logique, flux de contrôle et boucles",
     "td07": "Étude de cas + mini-projet 1",
     "td08": "Pandas : agrégation et transformation",
+    "td09": "Finalisation",
 }
 
 # points par TD : présence / notebook / quiz / mini-projet
 BAREME = {td: {"presence": 10, "notebook": 20, "quiz": 10, "mp": 0} for td in TDS}
 BAREME["td01"]["quiz"] = 0                      # quiz à partir du TD02
 BAREME["td07"] = {"presence": 10, "notebook": 20, "quiz": 0, "mp": 30}
+BAREME["td09"] = {"presence": 10, "notebook": 0, "quiz": 30, "mp": 0}
 
 # Cellules de vérification du mini-projet : notées sur le barème « mp »,
 # et non sur les 20 points du notebook (1 cellule = 10 pts pour le TD07).
@@ -175,6 +188,8 @@ INDEX_MP = {"td07": ("42", "43", "44")}
 PREMIER_TD_GIT = "td02"
 # La review par un tiers est obligatoire à partir du TD03 (TD02 : configuration initiale).
 PREMIER_TD_REVIEW = "td03"
+# TD sans notebook à rendre ni cycle Git à vérifier (séances atypiques).
+TDS_SANS_NOTEBOOK_GIT = {"td09"}
 
 
 # ════════════════════════════════════════════════════════════════════════════
@@ -982,7 +997,7 @@ def _traiter_etudiant(email, fiche, tds, gh, presences, quiz):
                  "mp_ok": 0, "mp_total": 0, "details": [], "placeholders": 0}
         proprete = None
         git = None
-        if depot_ok:
+        if depot_ok and td not in TDS_SANS_NOTEBOOK_GIT:
             if td == "td02":
                 audit = audit_td02_cycle(gh, depot, username, branches)
             else:
@@ -1218,14 +1233,14 @@ function problemes(e, tds, avecDetails) {
   for (const td of tds) {
     const d = e.tds[td], b = DONNEES.bareme[td];
     if (!d.presence) liste.push(`${td} : absent`);
-    if (e.depot_ok && !d.audit.present) liste.push(`${td} : notebook absent de main`);
+    if (e.depot_ok && b.notebook && !d.audit.present) liste.push(`${td} : notebook absent de main`);
     else if (d.audit.total && d.audit.ok < d.audit.total) {
       liste.push(`${td} : ${d.audit.total - d.audit.ok}/${d.audit.total} cellules incorrectes`);
       if (avecDetails) (d.audit.details || []).forEach(x => liste.push(`${td} : ${x}`));
     }
     if (d.audit.placeholders) liste.push(`${td} : ${d.audit.placeholders} placeholder(s) ____`);
     if (b.quiz && !d.quiz) liste.push(`${td} : quiz non fait`);
-    if (d.git) {
+    if (d.git && b.notebook) {
       if (!d.git.pr) liste.push(`${td} : aucune Pull Request`);
       else {
         if (!d.git.mergee_le) liste.push(`${td} : PR non mergée`);
